@@ -1,0 +1,2081 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SI-API SEHAT — Sistem Monitoring Kesehatan Pemadam Kebakaran</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --fire: #FF4500;
+    --fire-light: #FF6B35;
+    --fire-dark: #CC3300;
+    --ember: #FF8C00;
+    --smoke: #2A2A2A;
+    --ash: #1A1A1A;
+    --slate: #3A3A3A;
+    --mist: #F5F2EE;
+    --white: #FFFFFF;
+    --safe: #22C55E;
+    --warn: #F59E0B;
+    --danger: #EF4444;
+    --info: #3B82F6;
+    --text-primary: #1A1A1A;
+    --text-muted: #6B7280;
+    --border: #E5E0DA;
+    --card-bg: #FFFFFF;
+    --section-bg: #FAF8F5;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--ash);
+    color: var(--white);
+    overflow-x: hidden;
+  }
+
+  /* ═══ HEADER ═══ */
+  .app-header {
+    background: var(--smoke);
+    border-bottom: 3px solid var(--fire);
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px;
+    height: 64px;
+  }
+  .logo-area { display: flex; align-items: center; gap: 14px; }
+  .logo-icon {
+    width: 42px; height: 42px;
+    background: linear-gradient(135deg, var(--fire), var(--ember));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+    box-shadow: 0 0 20px rgba(255,69,0,0.4);
+  }
+  .logo-text { line-height: 1; }
+  .logo-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; color: var(--white); }
+  .logo-sub { font-size: 10px; color: #999; letter-spacing: 1px; text-transform: uppercase; margin-top: 1px; }
+  .header-badge {
+    background: rgba(255,69,0,0.15); border: 1px solid var(--fire);
+    color: var(--fire-light); font-size: 11px; font-weight: 600;
+    padding: 4px 10px; border-radius: 20px; letter-spacing: 0.5px;
+  }
+
+  /* ═══ NAV TABS ═══ */
+  .nav-tabs {
+    background: var(--smoke);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center;
+    padding: 0 24px; gap: 4px;
+    overflow-x: auto;
+  }
+  .nav-tab {
+    padding: 14px 20px; font-size: 13px; font-weight: 500;
+    color: #888; cursor: pointer; border-bottom: 2px solid transparent;
+    transition: all 0.2s; white-space: nowrap;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .nav-tab:hover { color: var(--white); }
+  .nav-tab.active { color: var(--fire-light); border-bottom-color: var(--fire); }
+  .tab-icon { font-size: 15px; }
+
+  /* ═══ MAIN CONTENT ═══ */
+  .main { min-height: calc(100vh - 120px); }
+  .tab-pane { display: none; animation: fadeIn 0.3s ease; }
+  .tab-pane.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ═══ HERO SECTION ═══ */
+  .hero {
+    background: linear-gradient(135deg, var(--ash) 0%, #1e0a00 50%, var(--ash) 100%);
+    padding: 60px 40px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(255,69,0,0.2) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(52px, 8vw, 96px);
+    letter-spacing: 6px;
+    line-height: 0.9;
+    background: linear-gradient(180deg, #FFFFFF 0%, var(--fire-light) 60%, var(--fire-dark) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+  .hero-sub {
+    font-size: 13px; letter-spacing: 3px; text-transform: uppercase;
+    color: var(--ember); font-weight: 600; margin-bottom: 20px;
+  }
+  .hero-desc { max-width: 560px; margin: 0 auto 32px; color: #aaa; font-size: 15px; line-height: 1.7; }
+  .hero-stats {
+    display: flex; justify-content: center; gap: 48px; flex-wrap: wrap;
+    margin-top: 40px;
+  }
+  .stat-item { text-align: center; }
+  .stat-num { font-family: 'Bebas Neue', sans-serif; font-size: 42px; color: var(--fire-light); line-height: 1; }
+  .stat-label { font-size: 11px; color: #888; letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
+
+  /* ═══ CARD SYSTEM ═══ */
+  .section { padding: 32px 24px; max-width: 1200px; margin: 0 auto; }
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px; letter-spacing: 3px;
+    color: var(--white); margin-bottom: 4px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: rgba(255,69,0,0.3); }
+  .section-desc { color: #888; font-size: 13px; margin-bottom: 24px; }
+  .card {
+    background: var(--smoke);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .card-header {
+    background: rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 16px 20px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .card-header-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; background: rgba(255,69,0,0.15);
+  }
+  .card-header-title { font-weight: 600; font-size: 14px; color: var(--white); }
+  .card-header-sub { font-size: 11px; color: #888; margin-top: 1px; }
+  .card-body { padding: 20px; }
+
+  /* ═══ FORM STYLING ═══ */
+  .form-wrapper {
+    background: #FAF8F5;
+    min-height: 100vh;
+    color: var(--text-primary);
+  }
+  .gform-header {
+    background: linear-gradient(135deg, var(--fire-dark), var(--fire));
+    color: white; padding: 32px 40px;
+    border-bottom: 5px solid var(--ember);
+  }
+  .gform-header h1 { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 2px; margin-bottom: 6px; }
+  .gform-header p { font-size: 14px; opacity: 0.9; line-height: 1.6; }
+  .gform-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.2); padding: 4px 12px;
+    border-radius: 20px; font-size: 11px; font-weight: 600;
+    margin-top: 10px; letter-spacing: 1px;
+  }
+  .gform-body { padding: 24px 40px; max-width: 760px; margin: 0 auto; }
+  .form-section-card {
+    background: white; border-radius: 8px;
+    border-left: 4px solid var(--fire);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    margin-bottom: 20px; overflow: hidden;
+  }
+  .form-section-card.border-safe { border-left-color: var(--safe); }
+  .form-section-card.border-warn { border-left-color: var(--warn); }
+  .form-section-card.border-info { border-left-color: var(--info); }
+  .form-section-header { padding: 16px 20px 4px; border-bottom: 1px solid #F0EDE8; margin-bottom: 8px; }
+  .form-section-header h3 { font-size: 17px; font-weight: 600; color: var(--text-primary); }
+  .form-section-header p { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+  .form-field { padding: 14px 20px; border-bottom: 1px solid #F7F5F2; }
+  .form-field:last-child { border-bottom: none; }
+  .field-label { font-size: 14px; font-weight: 500; color: var(--text-primary); margin-bottom: 10px; display: block; }
+  .field-required { color: var(--fire); }
+  .field-hint { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; display: block; }
+  .radio-group, .checkbox-group { display: flex; flex-direction: column; gap: 8px; }
+  .radio-item, .checkbox-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px; border-radius: 6px; cursor: pointer;
+    transition: background 0.15s; border: 1px solid transparent;
+  }
+  .radio-item:hover, .checkbox-item:hover { background: #F5F0EB; }
+  .radio-item input, .checkbox-item input { accent-color: var(--fire); width: 16px; height: 16px; }
+  .radio-item label, .checkbox-item label { font-size: 14px; cursor: pointer; }
+  .scale-group { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; align-items: flex-end; }
+  .scale-label-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+  .scale-btn {
+    width: 40px; height: 40px; border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: white; cursor: pointer;
+    font-size: 14px; font-weight: 600;
+    transition: all 0.15s; color: var(--text-primary);
+  }
+  .scale-btn:hover { border-color: var(--fire); background: #FFF5F0; color: var(--fire); }
+  .scale-btn.selected { background: var(--fire); border-color: var(--fire); color: white; }
+  .text-input, .select-input {
+    width: 100%; padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px; font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    background: white; color: var(--text-primary);
+    transition: border-color 0.2s;
+    outline: none;
+  }
+  .text-input:focus, .select-input:focus { border-color: var(--fire); }
+  .submit-btn {
+    display: block; width: 100%;
+    background: linear-gradient(135deg, var(--fire), var(--ember));
+    color: white; border: none; padding: 16px 32px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px; letter-spacing: 2px;
+    border-radius: 8px; cursor: pointer;
+    margin-top: 24px; margin-bottom: 40px;
+    transition: all 0.2s; box-shadow: 0 4px 20px rgba(255,69,0,0.3);
+  }
+  .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(255,69,0,0.4); }
+  .form-footer-note {
+    text-align: center; font-size: 12px; color: var(--text-muted);
+    padding: 16px; background: white; margin-top: 8px; border-radius: 8px;
+  }
+
+  /* ═══ RISK SCORE INDICATOR ═══ */
+  .risk-indicator {
+    padding: 16px 20px;
+    background: white;
+    border-radius: 8px;
+    border: 2px solid var(--border);
+    margin-bottom: 16px;
+    transition: all 0.3s;
+  }
+  .risk-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 8px; }
+  .risk-bar-bg { height: 10px; background: #F0EDE8; border-radius: 5px; overflow: hidden; }
+  .risk-bar-fill { height: 100%; border-radius: 5px; transition: all 0.4s ease; background: var(--safe); width: 10%; }
+  .risk-status { margin-top: 10px; display: flex; align-items: center; gap: 8px; }
+  .risk-badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; }
+  .risk-badge.low { background: #DCFCE7; color: #15803D; }
+  .risk-badge.medium { background: #FEF9C3; color: #A16207; }
+  .risk-badge.high { background: #FEE2E2; color: #B91C1C; }
+  .risk-score-num { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: var(--text-primary); }
+
+  /* ═══ DASHBOARD ═══ */
+  .dashboard-bg { background: var(--ash); min-height: 100vh; padding: 28px; }
+  .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .metric-card {
+    background: var(--smoke);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px; padding: 20px;
+    position: relative; overflow: hidden;
+  }
+  .metric-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .metric-card.fire::before { background: var(--fire); }
+  .metric-card.safe::before { background: var(--safe); }
+  .metric-card.warn::before { background: var(--warn); }
+  .metric-card.danger::before { background: var(--danger); }
+  .metric-card.info::before { background: var(--info); }
+  .metric-icon { font-size: 28px; margin-bottom: 10px; display: block; }
+  .metric-num { font-family: 'Bebas Neue', sans-serif; font-size: 44px; line-height: 1; }
+  .metric-num.fire { color: var(--fire-light); }
+  .metric-num.safe { color: var(--safe); }
+  .metric-num.warn { color: var(--warn); }
+  .metric-num.danger { color: var(--danger); }
+  .metric-num.info { color: var(--info); }
+  .metric-label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+  .metric-sub { font-size: 11px; color: #666; margin-top: 6px; }
+
+  .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  @media (max-width: 768px) { .chart-row { grid-template-columns: 1fr; } }
+
+  /* Simple Chart */
+  .mini-chart { padding: 20px; }
+  .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 100px; margin-bottom: 8px; }
+  .bar-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+  .bar-fill { width: 100%; border-radius: 4px 4px 0 0; transition: height 0.5s ease; min-height: 4px; }
+  .bar-label { font-size: 9px; color: #888; text-align: center; }
+  .bar-val { font-size: 10px; color: #bbb; font-weight: 600; }
+  .donut-wrapper { display: flex; align-items: center; gap: 20px; }
+  .donut-svg { flex-shrink: 0; }
+  .donut-legend { display: flex; flex-direction: column; gap: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #bbb; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Table */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .data-table th { background: rgba(255,255,255,0.04); color: #888; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 14px; text-align: left; }
+  .data-table td { padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #ccc; }
+  .data-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .status-pill { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+  .status-pill.low { background: rgba(34,197,94,0.15); color: #4ADE80; }
+  .status-pill.medium { background: rgba(245,158,11,0.15); color: #FCD34D; }
+  .status-pill.high { background: rgba(239,68,68,0.15); color: #FCA5A5; }
+
+  /* ═══ SOP ═══ */
+  .sop-wrapper { background: var(--ash); min-height: 100vh; padding: 28px; }
+  .sop-grid { display: grid; grid-template-columns: 280px 1fr; gap: 20px; }
+  @media (max-width: 900px) { .sop-grid { grid-template-columns: 1fr; } }
+  .sop-sidebar { position: sticky; top: 100px; height: fit-content; }
+  .sop-nav-card { background: var(--smoke); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; overflow: hidden; }
+  .sop-nav-header { background: rgba(255,69,0,0.1); border-bottom: 1px solid rgba(255,69,0,0.2); padding: 14px 16px; font-family: 'Bebas Neue', sans-serif; font-size: 14px; letter-spacing: 2px; color: var(--fire-light); }
+  .sop-nav-item { padding: 12px 16px; cursor: pointer; transition: all 0.15s; border-left: 3px solid transparent; font-size: 13px; color: #888; display: flex; gap: 10px; align-items: center; }
+  .sop-nav-item:hover { color: var(--white); background: rgba(255,255,255,0.03); }
+  .sop-nav-item.active { color: var(--fire-light); border-left-color: var(--fire); background: rgba(255,69,0,0.06); }
+  .sop-nav-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; background: rgba(255,255,255,0.1); padding: 1px 6px; border-radius: 3px; flex-shrink: 0; }
+  .sop-content-area { display: none; }
+  .sop-content-area.active { display: block; }
+  .sop-card { background: var(--smoke); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
+  .sop-card-header { background: rgba(255,69,0,0.08); border-bottom: 1px solid rgba(255,69,0,0.15); padding: 14px 20px; display: flex; align-items: center; gap: 12px; }
+  .sop-card-num { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--fire-light); line-height: 1; }
+  .sop-card-title { font-size: 15px; font-weight: 600; color: var(--white); }
+  .sop-card-sub { font-size: 12px; color: #888; }
+  .sop-steps { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+  .sop-step { display: flex; gap: 14px; align-items: flex-start; }
+  .step-num { width: 26px; height: 26px; border-radius: 50%; background: rgba(255,69,0,0.15); border: 1.5px solid rgba(255,69,0,0.3); color: var(--fire-light); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .step-content { flex: 1; }
+  .step-title { font-size: 13px; font-weight: 600; color: var(--white); margin-bottom: 3px; }
+  .step-desc { font-size: 12px; color: #888; line-height: 1.6; }
+  .step-warning { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2); border-radius: 6px; padding: 8px 12px; margin-top: 6px; font-size: 12px; color: #FCD34D; display: flex; gap: 6px; align-items: flex-start; }
+  .step-danger { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); border-radius: 6px; padding: 8px 12px; margin-top: 6px; font-size: 12px; color: #FCA5A5; display: flex; gap: 6px; align-items: flex-start; }
+  .step-safe { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); border-radius: 6px; padding: 8px 12px; margin-top: 6px; font-size: 12px; color: #4ADE80; display: flex; gap: 6px; align-items: flex-start; }
+  .checklist-box { display: flex; flex-direction: column; gap: 8px; padding: 12px 20px 16px; }
+  .check-item { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .check-item input[type="checkbox"] { accent-color: var(--fire); width: 16px; height: 16px; }
+  .check-item label { font-size: 13px; color: #ccc; cursor: pointer; }
+  .check-item.checked label { text-decoration: line-through; color: #555; }
+  .progress-section { padding: 14px 20px; background: rgba(255,255,255,0.02); border-top: 1px solid rgba(255,255,255,0.06); }
+  .progress-bar-bg { height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; }
+  .progress-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--fire), var(--ember)); transition: width 0.4s ease; }
+  .progress-label { font-size: 11px; color: #888; margin-bottom: 6px; display: flex; justify-content: space-between; }
+
+  /* ═══ VIDEO GUIDE ═══ */
+  .video-wrapper { background: var(--ash); min-height: 100vh; padding: 28px; }
+  .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+  .video-card { background: var(--smoke); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; overflow: hidden; cursor: pointer; transition: all 0.2s; }
+  .video-card:hover { transform: translateY(-3px); border-color: rgba(255,69,0,0.3); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+  .video-thumb {
+    position: relative; height: 180px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 52px; overflow: hidden;
+  }
+  .video-thumb::after {
+    content: '▶';
+    position: absolute;
+    width: 52px; height: 52px;
+    background: rgba(255,69,0,0.9);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: white;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    transition: transform 0.2s;
+  }
+  .video-card:hover .video-thumb::after { transform: scale(1.1); }
+  .video-info { padding: 16px; }
+  .video-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 2px 8px; border-radius: 3px; display: inline-block; margin-bottom: 8px; }
+  .video-tag.fire { background: rgba(255,69,0,0.15); color: var(--fire-light); }
+  .video-tag.health { background: rgba(34,197,94,0.15); color: #4ADE80; }
+  .video-tag.mental { background: rgba(59,130,246,0.15); color: #93C5FD; }
+  .video-tag.decon { background: rgba(245,158,11,0.15); color: #FCD34D; }
+  .video-title { font-size: 15px; font-weight: 600; color: var(--white); margin-bottom: 6px; line-height: 1.4; }
+  .video-duration { font-size: 12px; color: #888; display: flex; align-items: center; gap: 5px; }
+
+  /* Video Modal */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 200; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal-box { background: var(--smoke); border-radius: 16px; width: 90%; max-width: 680px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
+  .modal-header { padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; }
+  .modal-title { font-weight: 600; font-size: 15px; color: var(--white); }
+  .modal-close { background: none; border: none; color: #888; cursor: pointer; font-size: 20px; padding: 4px; }
+  .modal-video-area {
+    height: 280px; background: linear-gradient(135deg, var(--ash), #1a0500);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 72px; flex-direction: column; gap: 16px;
+  }
+  .modal-video-note { font-size: 13px; color: #888; text-align: center; padding: 0 40px; }
+  .modal-body { padding: 20px; }
+  .modal-steps { display: flex; flex-direction: column; gap: 10px; }
+  .modal-step { display: flex; gap: 12px; align-items: flex-start; }
+  .modal-step-num { width: 24px; height: 24px; background: rgba(255,69,0,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--fire-light); flex-shrink: 0; }
+  .modal-step-text { font-size: 13px; color: #ccc; line-height: 1.6; }
+
+  /* ═══ QR CODE ═══ */
+  .qr-section { background: var(--ash); padding: 28px; }
+  .qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+  .qr-card { background: var(--smoke); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 28px; text-align: center; }
+  .qr-visual {
+    width: 140px; height: 140px; margin: 0 auto 14px;
+    background: white; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; position: relative; flex-shrink: 0;
+  }
+  .qr-visual svg { width: 120px; height: 120px; }
+  .qr-card { background: var(--smoke); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; text-align: center; display: flex; flex-direction: column; }
+  .qr-card-body { flex: 1; display: flex; flex-direction: column; }
+  .qr-input-wrap { margin-bottom: 8px; }
+  .qr-input { width: 100%; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); color: white; padding: 8px 10px; border-radius: 6px; font-size: 11px; font-family: 'DM Sans', sans-serif; outline: none; margin-bottom: 6px; box-sizing: border-box; }
+  .qr-input:focus { border-color: rgba(255,69,0,.4); }
+  .qr-input::placeholder { color: #555; }
+  .qr-save-btn { width: 100%; padding: 7px 0; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; border: 1px solid; margin-bottom: 8px; transition: all .15s; }
+  .qr-label { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; color: var(--white); margin-bottom: 6px; }
+  .qr-desc { font-size: 12px; color: #888; line-height: 1.6; margin-bottom: 16px; }
+  .qr-btn { background: rgba(255,69,0,0.15); border: 1px solid rgba(255,69,0,0.3); color: var(--fire-light); padding: 8px 20px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .qr-btn:hover { background: rgba(255,69,0,0.25); }
+
+  /* ═══ SUBMISSION SUCCESS ═══ */
+  .success-screen { display: none; text-align: center; padding: 60px 40px; background: white; }
+  .success-screen.show { display: block; }
+  .success-icon { font-size: 64px; margin-bottom: 20px; }
+  .success-title { font-family: 'Bebas Neue', sans-serif; font-size: 36px; letter-spacing: 2px; color: var(--text-primary); margin-bottom: 10px; }
+  .success-risk-display { max-width: 400px; margin: 20px auto; padding: 20px; border-radius: 12px; border: 2px solid var(--border); }
+  .decon-instructions { max-width: 500px; margin: 20px auto; text-align: left; }
+  .decon-step { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .decon-step:last-child { border-bottom: none; }
+  .decon-num { width: 28px; height: 28px; background: var(--fire); border-radius: 50%; color: white; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .decon-text { font-size: 13px; color: var(--text-primary); line-height: 1.6; }
+  .back-btn { background: linear-gradient(135deg, var(--fire), var(--ember)); color: white; border: none; padding: 12px 32px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 20px; }
+
+  /* TOOLTIP */
+  .tooltip { position: relative; display: inline-block; }
+  .tooltip .tip { display: none; position: absolute; bottom: 125%; left: 50%; transform: translateX(-50%); background: #333; color: white; font-size: 11px; padding: 5px 10px; border-radius: 4px; white-space: nowrap; z-index: 10; }
+  .tooltip:hover .tip { display: block; }
+
+  /* ALERT BOX */
+  .alert-box { border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; display: flex; gap: 10px; align-items: flex-start; font-size: 13px; line-height: 1.6; }
+  .alert-box.fire { background: rgba(255,69,0,0.1); border: 1px solid rgba(255,69,0,0.25); color: #FFAA80; }
+  .alert-box.warn { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2); color: #FCD34D; }
+  .alert-box.info { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.2); color: #93C5FD; }
+  .alert-box.safe { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); color: #4ADE80; }
+
+  /* RESPONSIVE */
+  @media (max-width: 600px) {
+    .gform-body { padding: 16px; }
+    .gform-header { padding: 24px 16px; }
+    .hero { padding: 40px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="app-header">
+  <div class="logo-area">
+    <div class="logo-icon">🔥</div>
+    <div class="logo-text">
+      <div class="logo-title">SI-API SEHAT</div>
+      <div class="logo-sub">Satpol PP & Damkar Kab. Lingga</div>
+    </div>
+  </div>
+  <div class="header-badge">● AKTIF 2026</div>
+</header>
+
+<!-- NAV TABS -->
+<nav class="nav-tabs">
+  <div class="nav-tab active" onclick="switchTab('home')" id="tab-home">
+    <span class="tab-icon">🏠</span> Beranda
+  </div>
+  <div class="nav-tab" onclick="switchTab('form')" id="tab-form">
+    <span class="tab-icon">📋</span> Form Monitoring
+  </div>
+  <div class="nav-tab" onclick="switchTab('dashboard')" id="tab-dashboard">
+    <span class="tab-icon">📊</span> Dashboard
+  </div>
+  <div class="nav-tab" onclick="switchTab('sop')" id="tab-sop">
+    <span class="tab-icon">📄</span> SOP
+  </div>
+  <div class="nav-tab" onclick="switchTab('video')" id="tab-video">
+    <span class="tab-icon">🎬</span> Panduan Video
+  </div>
+  <div class="nav-tab" onclick="switchTab('qr')" id="tab-qr">
+    <span class="tab-icon">📱</span> QR Code
+  </div>
+</nav>
+
+<!-- ════════════════════════════════ -->
+<!-- TAB: BERANDA -->
+<!-- ════════════════════════════════ -->
+<div class="tab-pane active main" id="pane-home">
+  <div class="hero">
+    <div class="hero-sub">Sistem Pemantauan Paparan & Investigasi Kesehatan</div>
+    <div class="hero-title">SI-API<br>SEHAT</div>
+    <p class="hero-desc">Platform monitoring kesehatan terintegrasi untuk petugas pemadam kebakaran Satpol PP dan Damkar Kabupaten Lingga. Memantau kondisi fisik dan mental setelah kegiatan pemadaman secara digital.</p>
+    <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+      <button onclick="switchTab('form')" style="background:linear-gradient(135deg,var(--fire),var(--ember));color:white;border:none;padding:12px 28px;border-radius:8px;font-family:'Bebas Neue';font-size:16px;letter-spacing:2px;cursor:pointer;box-shadow:0 4px 20px rgba(255,69,0,0.35);">ISI FORM MONITORING →</button>
+      <button onclick="switchTab('dashboard')" style="background:rgba(255,255,255,0.08);color:white;border:1px solid rgba(255,255,255,0.15);padding:12px 28px;border-radius:8px;font-family:'Bebas Neue';font-size:16px;letter-spacing:2px;cursor:pointer;">LIHAT DASHBOARD</button>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-item"><div class="stat-num" id="home-stat-total">—</div><div class="stat-label">Total Laporan</div></div>
+      <div class="stat-item"><div class="stat-num" id="home-stat-tinggi">—</div><div class="stat-label">Risiko Tinggi</div></div>
+      <div class="stat-item"><div class="stat-num" id="home-stat-aman">—</div><div class="stat-label">Petugas Aman</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🎯 Tentang Program</div>
+
+    <!-- LIVE ALERT RISIKO TINGGI -->
+    <div id="home-alert-tinggi" style="display:none;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:10px;padding:14px 18px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:#FCA5A5;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">🚨 Petugas Risiko Tinggi — Perlu Tindak Lanjut Segera</div>
+      <div id="home-alert-list"></div>
+    </div>
+
+    <!-- LIVE STATS ROW -->
+    <div id="home-live-stats" style="display:none;margin-bottom:20px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">
+        <div style="background:var(--smoke);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:14px 16px;">
+          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Responden Terbaru</div>
+          <div id="home-last-responden" style="font-size:13px;font-weight:600;color:var(--white);">—</div>
+          <div id="home-last-waktu" style="font-size:11px;color:#666;margin-top:3px;">—</div>
+        </div>
+        <div style="background:var(--smoke);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:14px 16px;">
+          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Kejadian Terbanyak</div>
+          <div id="home-top-jenis" style="font-size:13px;font-weight:600;color:var(--white);">—</div>
+        </div>
+        <div style="background:var(--smoke);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:14px 16px;">
+          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Tingkat Kepatuhan APD</div>
+          <div id="home-apd-pct" style="font-size:13px;font-weight:600;color:var(--safe);">—</div>
+        </div>
+        <div style="background:var(--smoke);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:14px 16px;">
+          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Status Koneksi</div>
+          <div id="home-koneksi" style="font-size:13px;font-weight:600;color:#888;">Belum terhubung</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:16px; margin-top:20px;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-header-icon">⚗️</div>
+          <div><div class="card-header-title">Paparan Toksik</div><div class="card-header-sub">Risiko fisik pasca pemadaman</div></div>
+        </div>
+        <div class="card-body">
+          <p style="font-size:13px;color:#aaa;line-height:1.7;">Asap beracun dari plastik, bahan kimia, dan material bangunan menghasilkan CO, HCN, dan zat karsinogenik yang berbahaya bagi kesehatan paru-paru dan sistem saraf petugas.</p>
+          <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+            <span style="background:rgba(239,68,68,0.15);color:#FCA5A5;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;">CO/HCN</span>
+            <span style="background:rgba(239,68,68,0.15);color:#FCA5A5;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;">Karsinogen</span>
+            <span style="background:rgba(239,68,68,0.15);color:#FCA5A5;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;">Partikulat</span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-header-icon">🧠</div>
+          <div><div class="card-header-title">Kesehatan Mental</div><div class="card-header-sub">Risiko psikologis petugas</div></div>
+        </div>
+        <div class="card-body">
+          <p style="font-size:13px;color:#aaa;line-height:1.7;">Situasi darurat, penyelamatan korban, dan kondisi ekstrem dapat menyebabkan PTSD, burnout, dan tekanan psikologis kronis yang mengganggu produktivitas dan kualitas hidup.</p>
+          <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+            <span style="background:rgba(59,130,246,0.15);color:#93C5FD;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;">PTSD</span>
+            <span style="background:rgba(59,130,246,0.15);color:#93C5FD;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;">Burnout</span>
+            <span style="background:rgba(59,130,246,0.15);color:#93C5FD;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;">Stres Akut</span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-header-icon">💡</div>
+          <div><div class="card-header-title">Solusi SI-API SEHAT</div><div class="card-header-sub">Gagasan kreatif inovatif</div></div>
+        </div>
+        <div class="card-body">
+          <p style="font-size:13px;color:#aaa;line-height:1.7;">Sistem monitoring digital terintegrasi berbasis Google Form + Sheets dengan skor risiko otomatis (hijau/kuning/merah) + SOP + video tutorial + QR Code akses cepat.</p>
+          <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+            <span style="background:rgba(34,197,94,0.15);color:#4ADE80;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;">Digital</span>
+            <span style="background:rgba(34,197,94,0.15);color:#4ADE80;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;">Otomatis</span>
+            <span style="background:rgba(34,197,94,0.15);color:#4ADE80;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;">Real-time</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════ -->
+<!-- TAB: FORM MONITORING -->
+<!-- ════════════════════════════════ -->
+<div class="tab-pane main" id="pane-form">
+  <div class="form-wrapper">
+
+    <!-- SUCCESS SCREEN -->
+    <div class="success-screen" id="success-screen">
+      <div class="success-icon">✅</div>
+      <div class="success-title">Laporan Berhasil Dikirim!</div>
+      <p style="color:var(--text-muted);margin-bottom:16px;font-size:14px;">Data kesehatan Anda telah tercatat di sistem SI-API SEHAT.<br>Tim supervisor akan meninjau laporan Anda.</p>
+      <div class="success-risk-display" id="result-risk-display">
+        <!-- injected by JS -->
+      </div>
+      <div class="decon-instructions" id="decon-steps">
+        <!-- injected by JS -->
+      </div>
+      <button class="back-btn" onclick="resetForm()">🔄 Isi Form Baru</button>
+    </div>
+
+    <!-- FORM SCREEN -->
+    <div id="form-screen">
+      <!-- HEADER -->
+      <div class="gform-header">
+        <h1>📋 FORM MONITORING KESEHATAN PASCA PEMADAMAN</h1>
+        <p>Sistem Pemantauan Paparan dan Investigasi Kesehatan Petugas Pemadam Kebakaran<br>Satpol PP dan Damkar Kabupaten Lingga</p>
+        <div class="gform-badge">🔒 DATA BERSIFAT RAHASIA · DIGUNAKAN HANYA UNTUK KEPERLUAN K3</div>
+
+        <!-- BANNER LINK GOOGLE FORM ASLI -->
+        <div id="form-live-banner" style="margin-top:14px;background:rgba(255,255,255,0.1);border-radius:8px;padding:12px 16px;font-size:12px;">
+          <div style="font-weight:700;margin-bottom:6px;font-size:13px;">🔗 Buka Google Form Asli</div>
+          <div style="opacity:.85;margin-bottom:10px;line-height:1.6;">Form di bawah adalah simulasi tampilan. Untuk mengirim data nyata ke Google Sheets, gunakan link Google Form Anda:</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <input id="form-url-display" readonly
+              style="flex:1;min-width:180px;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.2);color:white;padding:7px 10px;border-radius:6px;font-size:11px;font-family:'JetBrains Mono',monospace;outline:none;"
+              placeholder="Belum ada link form — isi di tab QR Code">
+            <button onclick="formOpenGForm()"
+              style="background:white;color:#CC3300;border:none;padding:7px 18px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif;">
+              🚀 Buka Form Asli
+            </button>
+            <button onclick="formCopyURL()"
+              style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:white;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif;">
+              📋 Salin Link
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="gform-body">
+        <!-- RISK LIVE INDICATOR -->
+        <div class="risk-indicator" id="live-risk">
+          <div class="risk-label">📊 Estimasi Risiko Real-time</div>
+          <div class="scale-label-row"><span>Rendah</span><span>Sedang</span><span>Tinggi</span></div>
+          <div class="risk-bar-bg"><div class="risk-bar-fill" id="risk-bar" style="width:5%;background:var(--safe);"></div></div>
+          <div class="risk-status">
+            <div class="risk-score-num" id="risk-score-num">0</div>
+            <div>
+              <span class="risk-badge low" id="risk-badge">RISIKO RENDAH (LOW)</span>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:3px;" id="risk-msg">Isi form untuk melihat skor risiko paparan Anda.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BAGIAN A: IDENTITAS -->
+        <div class="form-section-card">
+          <div class="form-section-header">
+            <h3>A. Identitas Petugas</h3>
+            <p>Data ini digunakan untuk mengidentifikasi dan memproses laporan kesehatan Anda</p>
+          </div>
+          <div class="form-field">
+            <label class="field-label">Nama Lengkap <span class="field-required">*</span></label>
+            <input type="text" class="text-input" placeholder="Masukkan nama lengkap" id="f-nama">
+          </div>
+          <div class="form-field">
+            <label class="field-label">NIP / Nomor Anggota <span class="field-required">*</span></label>
+            <input type="text" class="text-input" placeholder="Contoh: 199307272025061003" id="f-nip">
+          </div>
+          <div class="form-field">
+            <label class="field-label">Jabatan / Regu</label>
+            <select class="select-input" id="f-jabatan">
+              <option value="">— Pilih Jabatan —</option>
+              <option>Pemadam Pemula</option>
+              <option>Analis Kebakaran Ahli Pertama</option>
+              <option>Koordinator Regu</option>
+              <option>Pengemudi Damkar</option>
+              <option>Pranata Trantibum</option>
+              <option>Lainnya</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="field-label">Tanggal & Waktu Pengisian <span class="field-required">*</span></label>
+            <input type="datetime-local" class="text-input" id="f-tanggal">
+          </div>
+          <div class="form-field">
+            <label class="field-label">Lokasi Kejadian Kebakaran <span class="field-required">*</span></label>
+            <input type="text" class="text-input" placeholder="Nama desa/kelurahan dan kecamatan" id="f-lokasi">
+          </div>
+        </div>
+
+        <!-- BAGIAN B: DETAIL OPERASI -->
+        <div class="form-section-card border-info">
+          <div class="form-section-header">
+            <h3>B. Detail Operasi Pemadaman</h3>
+            <p>Informasi mengenai kegiatan pemadaman yang baru saja dilaksanakan</p>
+          </div>
+          <div class="form-field">
+            <label class="field-label">Jenis Kebakaran <span class="field-required">*</span></label>
+            <div class="radio-group" id="jenis-kebakaran">
+              <div class="radio-item"><input type="radio" name="jenis" id="j1" value="lahan" onchange="updateRisk()"><label for="j1">🌿 Kebakaran Hutan / Lahan (Karhutla)</label></div>
+              <div class="radio-item"><input type="radio" name="jenis" id="j2" value="bangunan" onchange="updateRisk()"><label for="j2">🏠 Kebakaran Bangunan / Gedung</label></div>
+              <div class="radio-item"><input type="radio" name="jenis" id="j3" value="industri" onchange="updateRisk()"><label for="j3">🏭 Kebakaran Industri / Gudang</label></div>
+              <div class="radio-item"><input type="radio" name="jenis" id="j4" value="kendaraan" onchange="updateRisk()"><label for="j4">🚗 Kebakaran Kendaraan</label></div>
+              <div class="radio-item"><input type="radio" name="jenis" id="j5" value="b3" onchange="updateRisk()"><label for="j5">☠️ Kebakaran dengan Bahan B3 / Kimia</label></div>
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="field-label">Lama Penugasan di Lokasi <span class="field-required">*</span></label>
+            <div class="radio-group">
+              <div class="radio-item"><input type="radio" name="lama" id="l1" value="1" onchange="updateRisk()"><label for="l1">⏱️ Kurang dari 1 jam</label></div>
+              <div class="radio-item"><input type="radio" name="lama" id="l2" value="2" onchange="updateRisk()"><label for="l2">⏱️ 1 – 3 jam</label></div>
+              <div class="radio-item"><input type="radio" name="lama" id="l3" value="3" onchange="updateRisk()"><label for="l3">⏱️ 3 – 6 jam</label></div>
+              <div class="radio-item"><input type="radio" name="lama" id="l4" value="4" onchange="updateRisk()"><label for="l4">⏱️ Lebih dari 6 jam</label></div>
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="field-label">APD yang Digunakan <span class="field-required">*</span></label>
+            <div class="checkbox-group">
+              <div class="checkbox-item"><input type="checkbox" id="apd1" onchange="updateRisk()"><label for="apd1">😷 SCBA / Masker pernapasan</label></div>
+              <div class="checkbox-item"><input type="checkbox" id="apd2" onchange="updateRisk()"><label for="apd2">🧤 Sarung tangan tahan panas</label></div>
+              <div class="checkbox-item"><input type="checkbox" id="apd3" onchange="updateRisk()"><label for="apd3">👕 Baju tahan api (turnout gear)</label></div>
+              <div class="checkbox-item"><input type="checkbox" id="apd4" onchange="updateRisk()"><label for="apd4">👢 Sepatu/boot keselamatan</label></div>
+              <div class="checkbox-item"><input type="checkbox" id="apd5" onchange="updateRisk()"><label for="apd5">⛑️ Helm pelindung</label></div>
+              <div class="checkbox-item"><input type="checkbox" id="apd6" onchange="updateRisk()"><label for="apd6">❌ Tidak menggunakan APD lengkap</label></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BAGIAN C: KONDISI FISIK -->
+        <div class="form-section-card border-warn">
+          <div class="form-section-header">
+            <h3>C. Kondisi Fisik Pasca Pemadaman</h3>
+            <p>Jawab dengan jujur sesuai kondisi tubuh Anda saat ini. Tidak ada jawaban benar atau salah.</p>
+          </div>
+          <div class="form-field">
+            <label class="field-label">Apakah Anda mengalami gejala berikut? <em style="font-size:11px;color:var(--text-muted)">(pilih semua yang berlaku)</em></label>
+            <div class="checkbox-group">
+              <div class="checkbox-item"><input type="checkbox" id="g1" onchange="updateRisk()"><label for="g1">🫁 Batuk-batuk / sesak napas</label></div>
+              <div class="checkbox-item"><input type="checkbox" id="g2" onchange="updateRisk()"><label for="g2">🤢 Mual / pusing kepala</label></div>
+              <div class="checkbox-item"><input type="checkbox" id="g3" onchange="updateRisk()"><label for="g3">👁️ Iritasi mata / perih</label></div>
+              <div class="checkbox-item"><input type="checkbox" id="g4" onchange="updateRisk()"><label for="g4">🌡️ Demam / badan panas</label></div>
+              <div class="checkbox-item"><input type="checkbox" id="g5" onchange="updateRisk()"><label for="g5">💪 Lemas / kelelahan ekstrem</label></div>
+              <div class="checkbox-item"><input type="checkbox" id="g6" onchange="updateRisk()"><label for="g6">🤕 Luka bakar / iritasi kulit</label></div>
+              <div class="checkbox-item"><input type="checkbox" id="g7"><label for="g7">✅ Tidak ada gejala</label></div>
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="field-label">Tingkat kelelahan fisik saat ini <span class="field-required">*</span></label>
+            <span class="field-hint">1 = Sangat segar, 10 = Sangat kelelahan</span>
+            <div class="scale-label-row"><span>Segar</span><span>Lelah sedang</span><span>Kelelahan berat</span></div>
+            <div class="scale-group" id="skala-lelah">
+              <button class="scale-btn" onclick="selectScale('skala-lelah',1,this)" onchange="updateRisk()">1</button>
+              <button class="scale-btn" onclick="selectScale('skala-lelah',2,this)">2</button>
+              <button class="scale-btn" onclick="selectScale('skala-lelah',3,this)">3</button>
+              <button class="scale-btn" onclick="selectScale('skala-lelah',4,this)">4</button>
+              <button class="scale-btn" onclick="selectScale('skala-lelah',5,this)">5</button>
+              <button class="scale-btn" onclick="selectScale('skala-lelah',6,this)">6</button>
+              <button class="scale-btn" onclick="selectScale('skala-lelah',7,this)">7</button>
+              <button class="scale-btn" onclick="selectScale('skala-lelah',8,this)">8</button>
+              <button class="scale-btn" onclick="selectScale('skala-lelah',9,this)">9</button>
+              <button class="scale-btn" onclick="selectScale('skala-lelah',10,this)">10</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- BAGIAN D: KONDISI MENTAL -->
+        <div class="form-section-card border-info">
+          <div class="form-section-header">
+            <h3>D. Kondisi Mental & Psikologis</h3>
+            <p>Data ini bersifat sangat rahasia dan hanya dilihat oleh petugas K3 yang berwenang</p>
+          </div>
+          <div class="form-field">
+            <label class="field-label">Apakah Anda mengalami hal berikut setelah operasi? <em style="font-size:11px;color:var(--text-muted)">(pilih semua yang berlaku)</em></label>
+            <div class="checkbox-group">
+              <div class="checkbox-item"><input type="checkbox" id="m1" onchange="updateRisk()"><label for="m1">😰 Pikiran terus mengulangi kejadian (flashback)</label></div>
+              <div class="checkbox-item"><input type="checkbox" id="m2" onchange="updateRisk()"><label for="m2">😴 Sulit tidur / mimpi buruk</label></div>
+              <div class="checkbox-item"><input type="checkbox" id="m3" onchange="updateRisk()"><label for="m3">😡 Mudah marah / emosi tidak stabil</label></div>
+              <div class="checkbox-item"><input type="checkbox" id="m4" onchange="updateRisk()"><label for="m4">😶 Merasa tidak bersemangat / mati rasa</label></div>
+              <div class="checkbox-item"><input type="checkbox" id="m5" onchange="updateRisk()"><label for="m5">😟 Cemas berlebihan</label></div>
+              <div class="checkbox-item"><input type="checkbox" id="m6"><label for="m6">✅ Kondisi mental baik-baik saja</label></div>
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="field-label">Tingkat tekanan psikologis saat ini <span class="field-required">*</span></label>
+            <span class="field-hint">1 = Tenang total, 10 = Sangat tertekan</span>
+            <div class="scale-label-row"><span>Tenang</span><span>Agak tertekan</span><span>Sangat tertekan</span></div>
+            <div class="scale-group" id="skala-mental">
+              <button class="scale-btn" onclick="selectScale('skala-mental',1,this)">1</button>
+              <button class="scale-btn" onclick="selectScale('skala-mental',2,this)">2</button>
+              <button class="scale-btn" onclick="selectScale('skala-mental',3,this)">3</button>
+              <button class="scale-btn" onclick="selectScale('skala-mental',4,this)">4</button>
+              <button class="scale-btn" onclick="selectScale('skala-mental',5,this)">5</button>
+              <button class="scale-btn" onclick="selectScale('skala-mental',6,this)">6</button>
+              <button class="scale-btn" onclick="selectScale('skala-mental',7,this)">7</button>
+              <button class="scale-btn" onclick="selectScale('skala-mental',8,this)">8</button>
+              <button class="scale-btn" onclick="selectScale('skala-mental',9,this)">9</button>
+              <button class="scale-btn" onclick="selectScale('skala-mental',10,this)">10</button>
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="field-label">Apakah Anda ingin berbicara dengan konselor/psikolog?</label>
+            <div class="radio-group">
+              <div class="radio-item"><input type="radio" name="konselor" id="k1" value="ya"><label for="k1">Ya, saya ingin konseling</label></div>
+              <div class="radio-item"><input type="radio" name="konselor" id="k2" value="tidak"><label for="k2">Tidak, saya baik-baik saja</label></div>
+              <div class="radio-item"><input type="radio" name="konselor" id="k3" value="nanti"><label for="k3">Mungkin nanti / tidak yakin</label></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BAGIAN E: DEKONTAMINASI -->
+        <div class="form-section-card border-safe">
+          <div class="form-section-header">
+            <h3>E. Dekontaminasi & Kebersihan Pasca Tugas</h3>
+            <p>Konfirmasi tindakan pembersihan yang telah dilakukan setelah operasi</p>
+          </div>
+          <div class="form-field">
+            <label class="field-label">Prosedur kebersihan yang telah dilakukan <span class="field-required">*</span></label>
+            <div class="checkbox-group">
+              <div class="checkbox-item"><input type="checkbox" id="d1"><label for="d1">🚿 Mandi dan keramas dengan sabun setelah tugas</label></div>
+              <div class="checkbox-item"><input type="checkbox" id="d2"><label for="d2">👕 Mengganti pakaian setelah tugas</label></div>
+              <div class="checkbox-item"><input type="checkbox" id="d3"><label for="d3">🫧 Membersihkan APD sesuai prosedur</label></div>
+              <div class="checkbox-item"><input type="checkbox" id="d4"><label for="d4">🌬️ Menghirup udara segar / ventilasi cukup</label></div>
+              <div class="checkbox-item"><input type="checkbox" id="d5"><label for="d5">💧 Minum air yang cukup setelah tugas</label></div>
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="field-label">Catatan tambahan</label>
+            <textarea class="text-input" rows="3" style="resize:vertical;" placeholder="Tuliskan gejala, kejadian khusus, atau hal lain yang ingin dilaporkan..."></textarea>
+          </div>
+        </div>
+
+        <div class="form-footer-note">
+          <strong>🔒 Pernyataan Kerahasiaan:</strong> Data yang Anda isi hanya akan digunakan untuk kepentingan monitoring K3 dan tidak akan disebarkan tanpa izin. Dengan menekan tombol kirim, Anda menyetujui penggunaan data ini sesuai ketentuan yang berlaku.
+        </div>
+
+        <button class="submit-btn" onclick="submitForm()">📤 KIRIM LAPORAN MONITORING</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════ -->
+<!-- TAB: DASHBOARD -->
+<!-- ════════════════════════════════ -->
+<div class="tab-pane main" id="pane-dashboard">
+  <div class="dashboard-bg">
+
+    <!-- SETUP URL BANNER -->
+    <div id="db-setup-banner" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:16px 20px;margin-bottom:20px;display:none;">
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <span style="font-size:20px;flex-shrink:0">⚙️</span>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:600;color:#FCD34D;margin-bottom:4px">Hubungkan ke Google Sheets</div>
+          <div style="font-size:12px;color:#FCD34D;opacity:.85;line-height:1.7;margin-bottom:10px">Paste URL Web App Google Apps Script untuk memuat data nyata. Format: <code style="background:rgba(0,0,0,.2);padding:1px 6px;border-radius:3px;font-family:monospace">https://script.google.com/macros/s/XXXX/exec</code></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <input id="db-url-input" type="url" placeholder="https://script.google.com/macros/s/.../exec"
+              style="flex:1;min-width:220px;background:rgba(0,0,0,.3);border:1px solid rgba(245,158,11,.4);color:white;padding:8px 12px;border-radius:7px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;">
+            <button onclick="dbSaveURL()" style="background:#F59E0B;color:#1a1a1a;border:none;padding:8px 18px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">Simpan & Muat</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOPBAR DASHBOARD -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="section-title" style="color:white;margin-bottom:0;">📊 DASHBOARD MONITORING KESEHATAN</div>
+        <span id="db-live-badge" style="display:none;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);color:#4ADE80;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.5px;">● LIVE</span>
+        <span id="db-demo-badge" style="background:rgba(255,140,0,.15);border:1px solid rgba(255,140,0,.3);color:#FCA857;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.5px;">DEMO</span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="dbLoadData()" id="db-refresh-btn" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#aaa;padding:6px 14px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='#aaa'">↻ Refresh</button>
+        <button onclick="dbExport()" style="background:linear-gradient(135deg,var(--fire),var(--ember));color:white;border:none;padding:6px 14px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">⬇ Export CSV</button>
+        <button onclick="dbResetURL()" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:#666;padding:6px 14px;border-radius:6px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;" title="Ganti URL Web App">⚙️</button>
+      </div>
+    </div>
+
+    <!-- LOADING STATE -->
+    <div id="db-loading" style="text-align:center;padding:40px 20px;display:none;">
+      <div style="width:32px;height:32px;border:3px solid rgba(255,69,0,.2);border-top-color:var(--fire);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 12px;"></div>
+      <div style="color:#888;font-size:13px;">Memuat data dari Google Sheets...</div>
+    </div>
+
+    <!-- ERROR STATE -->
+    <div id="db-error" style="display:none;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:14px 18px;margin-bottom:16px;">
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span style="font-size:18px;flex-shrink:0">❌</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:#FCA5A5;margin-bottom:3px">Gagal memuat data</div>
+          <div style="font-size:12px;color:#FCA5A5;opacity:.8;line-height:1.6;" id="db-error-msg"></div>
+          <div style="margin-top:8px;display:flex;gap:8px;">
+            <button onclick="dbLoadData()" style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#FCA5A5;padding:4px 12px;border-radius:5px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;">↻ Coba Lagi</button>
+            <button onclick="dbResetURL()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#aaa;padding:4px 12px;border-radius:5px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;">⚙️ Ganti URL</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LAST UPDATED -->
+    <div id="db-last-updated" style="font-size:11px;color:#555;font-family:'JetBrains Mono',monospace;text-align:right;margin-bottom:12px;display:none;"></div>
+
+    <!-- METRIC CARDS -->
+    <div class="dashboard-grid">
+      <div class="metric-card fire">
+        <span class="metric-icon">📋</span>
+        <div class="metric-num fire" id="db-m-total">—</div>
+        <div class="metric-label">Total Laporan</div>
+        <div class="metric-sub" id="db-m-total-sub">Belum terhubung</div>
+      </div>
+      <div class="metric-card safe">
+        <span class="metric-icon">✅</span>
+        <div class="metric-num safe" id="db-m-low">—</div>
+        <div class="metric-label">Risiko Rendah</div>
+        <div class="metric-sub" id="db-m-low-sub"></div>
+      </div>
+      <div class="metric-card warn">
+        <span class="metric-icon">⚠️</span>
+        <div class="metric-num warn" id="db-m-med">—</div>
+        <div class="metric-label">Risiko Sedang</div>
+        <div class="metric-sub">Perlu pemantauan lanjut</div>
+      </div>
+      <div class="metric-card danger">
+        <span class="metric-icon">🚨</span>
+        <div class="metric-num danger" id="db-m-high">—</div>
+        <div class="metric-label">Risiko Tinggi</div>
+        <div class="metric-sub">Perlu tindak lanjut segera</div>
+      </div>
+      <div class="metric-card info">
+        <span class="metric-icon">🧠</span>
+        <div class="metric-num info" id="db-m-kons">—</div>
+        <div class="metric-label">Butuh Konseling</div>
+        <div class="metric-sub">Permintaan konselor aktif</div>
+      </div>
+    </div>
+
+    <div class="chart-row">
+      <!-- Bar Chart -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-header-icon">📈</div>
+          <div><div class="card-header-title">Laporan per Bulan</div><div class="card-header-sub" style="font-size:11px;color:#888">Data aktual dari Google Sheets</div></div>
+        </div>
+        <div class="mini-chart">
+          <div class="bar-chart" id="db-bar-chart">
+            <div style="width:100%;text-align:center;color:#555;font-size:12px;padding:20px 0;">Belum ada data</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Donut Chart -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-header-icon">🍩</div>
+          <div><div class="card-header-title">Distribusi Risiko</div><div class="card-header-sub" style="font-size:11px;color:#888">Persentase dari total laporan</div></div>
+        </div>
+        <div class="mini-chart">
+          <div class="donut-wrapper">
+            <svg class="donut-svg" width="100" height="100" viewBox="0 0 42 42">
+              <circle cx="21" cy="21" r="15.9" fill="none" stroke="#333" stroke-width="8"/>
+              <circle id="db-arc-low"  cx="21" cy="21" r="15.9" fill="none" stroke="var(--safe)"   stroke-width="8" stroke-dasharray="0 100" stroke-dashoffset="25"/>
+              <circle id="db-arc-med"  cx="21" cy="21" r="15.9" fill="none" stroke="var(--warn)"   stroke-width="8" stroke-dasharray="0 100" stroke-dashoffset="25"/>
+              <circle id="db-arc-high" cx="21" cy="21" r="15.9" fill="none" stroke="var(--danger)" stroke-width="8" stroke-dasharray="0 100" stroke-dashoffset="25"/>
+              <text x="21" y="20" text-anchor="middle" font-size="6" fill="white" font-family="'Bebas Neue',sans-serif" id="db-donut-num">0</text>
+              <text x="21" y="26" text-anchor="middle" font-size="3.2" fill="#666" font-family="'DM Sans',sans-serif">laporan</text>
+            </svg>
+            <div class="donut-legend">
+              <div class="legend-item"><div class="legend-dot" style="background:var(--safe);"></div>Rendah — <span id="db-dl-low">0</span></div>
+              <div class="legend-item"><div class="legend-dot" style="background:var(--warn);"></div>Sedang — <span id="db-dl-med">0</span></div>
+              <div class="legend-item"><div class="legend-dot" style="background:var(--danger);"></div>Tinggi — <span id="db-dl-high">0</span></div>
+              <div class="legend-item"><div class="legend-dot" style="background:var(--info);"></div>Konseling — <span id="db-dl-kons">0</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header" style="flex-wrap:wrap;gap:8px;">
+        <div class="card-header-icon">👤</div>
+        <div style="flex:1"><div class="card-header-title">Laporan Terbaru</div><div class="card-header-sub">Data aktual dari sistem monitoring</div></div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input id="db-search" placeholder="🔍 Cari nama..." oninput="dbFilterTable(this.value)"
+            style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:white;padding:5px 10px;border-radius:6px;font-size:11px;font-family:'DM Sans',sans-serif;outline:none;width:160px;">
+          <button onclick="dbSetFilter('semua',this)" class="db-fb db-fb-act" style="background:rgba(255,69,0,.1);border:1px solid rgba(255,69,0,.3);color:var(--fire2);padding:4px 10px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Semua</button>
+          <button onclick="dbSetFilter('rendah',this)" class="db-fb" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:#888;padding:4px 10px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">🟢</button>
+          <button onclick="dbSetFilter('sedang',this)" class="db-fb" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:#888;padding:4px 10px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">🟡</button>
+          <button onclick="dbSetFilter('tinggi',this)" class="db-fb" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:#888;padding:4px 10px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">🔴</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="data-table">
+          <thead><tr><th>Tanggal</th><th>Nama</th><th>Jabatan</th><th>Jenis Kejadian</th><th>Skor</th><th>Status</th><th>Tindak Lanjut</th></tr></thead>
+          <tbody id="db-tbody">
+            <tr><td colspan="7" style="text-align:center;padding:32px;color:#555;">Hubungkan ke Google Sheets untuk melihat data</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════════════════════════════ -->
+<!-- TAB: SOP -->
+<!-- ════════════════════════════════ -->
+<div class="tab-pane main" id="pane-sop">
+  <div class="sop-wrapper">
+    <div class="section-title" style="color:white;margin-bottom:20px;">📄 STANDAR OPERASIONAL PROSEDUR</div>
+
+    <div class="sop-grid">
+      <!-- Sidebar -->
+      <div class="sop-sidebar">
+        <div class="sop-nav-card">
+          <div class="sop-nav-header">📚 DAFTAR SOP</div>
+          <div class="sop-nav-item active" onclick="showSOP('sop1', this)">
+            <span class="sop-nav-num">01</span> Monitoring Kesehatan Pasca Pemadaman
+          </div>
+          <div class="sop-nav-item" onclick="showSOP('sop2', this)">
+            <span class="sop-nav-num">02</span> Dekontaminasi Diri Pasca Tugas
+          </div>
+          <div class="sop-nav-item" onclick="showSOP('sop3', this)">
+            <span class="sop-nav-num">03</span> Pembersihan & Penyimpanan APD
+          </div>
+          <div class="sop-nav-item" onclick="showSOP('sop4', this)">
+            <span class="sop-nav-num">04</span> Penanganan Kasus Risiko Tinggi
+          </div>
+        </div>
+        <div class="alert-box info" style="margin-top:16px;">
+          <span>ℹ️</span>
+          <div style="font-size:12px;">SOP ini berlaku di lingkungan Satpol PP dan Damkar Kab. Lingga mulai Mei 2026.</div>
+        </div>
+      </div>
+
+      <!-- SOP Content -->
+      <div>
+        <!-- SOP 1 -->
+        <div class="sop-content-area active" id="sop1">
+          <div class="sop-card">
+            <div class="sop-card-header">
+              <div class="sop-card-num">01</div>
+              <div>
+                <div class="sop-card-title">SOP Monitoring Kesehatan Pasca Pemadaman</div>
+                <div class="sop-card-sub">Berlaku untuk semua petugas yang terlibat operasi pemadaman</div>
+              </div>
+            </div>
+            <div class="sop-steps">
+              <div class="sop-step">
+                <div class="step-num">1</div>
+                <div class="step-content">
+                  <div class="step-title">Selesai Operasi — Kumpul di Titik Aman</div>
+                  <div class="step-desc">Setelah nyala api padam dan dinyatakan aman oleh komandan regu, seluruh petugas berkumpul di titik aman yang telah ditentukan jauh dari area asap.</div>
+                </div>
+              </div>
+              <div class="sop-step">
+                <div class="step-num">2</div>
+                <div class="step-content">
+                  <div class="step-title">Scan QR Code / Akses Form (maks. 30 menit pasca operasi)</div>
+                  <div class="step-desc">Setiap petugas membuka Google Form SI-API SEHAT melalui QR Code yang tersedia di kendaraan damkar atau mengaksesnya langsung dari smartphone.</div>
+                  <div class="step-warning">⚠️ Form wajib diisi dalam 30 menit setelah selesai operasi untuk akurasi data.</div>
+                </div>
+              </div>
+              <div class="sop-step">
+                <div class="step-num">3</div>
+                <div class="step-content">
+                  <div class="step-title">Isi Form Monitoring Kesehatan</div>
+                  <div class="step-desc">Isi seluruh pertanyaan dalam form dengan jujur mencakup: identitas, detail operasi, kondisi fisik (gejala & tingkat kelelahan), kondisi mental, dan konfirmasi dekontaminasi.</div>
+                </div>
+              </div>
+              <div class="sop-step">
+                <div class="step-num">4</div>
+                <div class="step-content">
+                  <div class="step-title">Baca Hasil Skor Risiko Otomatis</div>
+                  <div class="step-desc">Setelah submit, sistem akan menampilkan skor risiko otomatis (hijau/kuning/merah) beserta instruksi tindak lanjut yang harus dilakukan.</div>
+                  <div class="step-safe">✅ Hijau (0–33): Normal, lakukan dekontaminasi standar dan istirahat.</div>
+                  <div class="step-warning">⚠️ Kuning (34–66): Perlu pemantauan 3 hari, lapor ke atasan langsung.</div>
+                  <div class="step-danger">🚨 Merah (67–100): Segera ke fasilitas kesehatan, wajib lapor atasan hari ini.</div>
+                </div>
+              </div>
+              <div class="sop-step">
+                <div class="step-num">5</div>
+                <div class="step-content">
+                  <div class="step-title">Supervisor Review di Google Sheets</div>
+                  <div class="step-desc">Supervisor atau kepala bidang memantau laporan masuk melalui Google Sheets yang otomatis terupdate dari form. Data merah mendapatkan notifikasi prioritas.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Checklist -->
+          <div class="sop-card">
+            <div class="sop-card-header">
+              <div class="sop-card-num">✓</div>
+              <div>
+                <div class="sop-card-title">Checklist Supervisor Pasca Operasi</div>
+                <div class="sop-card-sub">Centang setiap item yang sudah dipenuhi</div>
+              </div>
+            </div>
+            <div class="checklist-box" id="checklist-sop1">
+              <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><label>Semua petugas telah mengisi form monitoring</label></div>
+              <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><label>Laporan telah masuk ke Google Sheets</label></div>
+              <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><label>Tidak ada kasus risiko tinggi (merah)</label></div>
+              <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><label>Petugas risiko sedang sudah dicatat untuk follow-up</label></div>
+              <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><label>Laporan operasi resmi telah dibuat</label></div>
+            </div>
+            <div class="progress-section">
+              <div class="progress-label"><span>Progress Checklist</span><span id="prog-sop1">0/5</span></div>
+              <div class="progress-bar-bg"><div class="progress-bar-fill" id="bar-sop1" style="width:0%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SOP 2 -->
+        <div class="sop-content-area" id="sop2">
+          <div class="sop-card">
+            <div class="sop-card-header">
+              <div class="sop-card-num">02</div>
+              <div>
+                <div class="sop-card-title">SOP Dekontaminasi Diri Pasca Tugas</div>
+                <div class="sop-card-sub">Prosedur pembersihan tubuh dari kontaminan berbahaya</div>
+              </div>
+            </div>
+            <div class="sop-steps">
+              <div class="sop-step">
+                <div class="step-num">1</div>
+                <div class="step-content">
+                  <div class="step-title">Jauhkan diri dari area terkontaminasi</div>
+                  <div class="step-desc">Segera keluar dari area asap dan kontaminan. Jangan duduk atau makan di area yang terpapar asap.</div>
+                  <div class="step-danger">🚫 LARANGAN: Jangan merokok, makan, atau minum sebelum mandi dekontaminasi.</div>
+                </div>
+              </div>
+              <div class="sop-step">
+                <div class="step-num">2</div>
+                <div class="step-content">
+                  <div class="step-title">Lepas APD dengan benar</div>
+                  <div class="step-desc">Lepas APD dari luar ke dalam. Jangan menyentuh wajah saat melepas. Gunakan kantong tertutup untuk APD kotor. Cuci tangan segera setelah melepas APD.</div>
+                </div>
+              </div>
+              <div class="sop-step">
+                <div class="step-num">3</div>
+                <div class="step-content">
+                  <div class="step-title">Mandi dengan air dan sabun</div>
+                  <div class="step-desc">Mandi sesegera mungkin dengan air bersih dan sabun. Keramas dengan sampo. Bersihkan seluruh tubuh termasuk lipatan kulit, kuku, dan telinga. Durasi mandi minimal 10 menit.</div>
+                  <div class="step-safe">✅ Mandi segera setelah tugas terbukti mengurangi risiko paparan karsinogen pada kulit hingga 85%.</div>
+                </div>
+              </div>
+              <div class="sop-step">
+                <div class="step-num">4</div>
+                <div class="step-content">
+                  <div class="step-title">Ganti pakaian bersih</div>
+                  <div class="step-desc">Gunakan pakaian bersih setelah mandi. Pakaian yang digunakan saat bertugas harus dicuci terpisah dari pakaian keluarga menggunakan deterjen.</div>
+                </div>
+              </div>
+              <div class="sop-step">
+                <div class="step-num">5</div>
+                <div class="step-content">
+                  <div class="step-title">Hidrasi dan istirahat</div>
+                  <div class="step-desc">Minum air putih minimal 500ml setelah bertugas. Hindari minuman berkafein dan beralkohol. Istirahat cukup minimal 8 jam setelah operasi besar.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SOP 3 -->
+        <div class="sop-content-area" id="sop3">
+          <div class="sop-card">
+            <div class="sop-card-header">
+              <div class="sop-card-num">03</div>
+              <div>
+                <div class="sop-card-title">SOP Pembersihan & Penyimpanan APD</div>
+                <div class="sop-card-sub">Prosedur perawatan Alat Pelindung Diri pasca operasi</div>
+              </div>
+            </div>
+            <div class="sop-steps">
+              <div class="sop-step">
+                <div class="step-num">1</div>
+                <div class="step-content">
+                  <div class="step-title">Inspeksi kerusakan APD</div>
+                  <div class="step-desc">Periksa setiap APD untuk kerusakan seperti sobekan, retakan, atau kerusakan pada sistem pelindung. APD rusak harus segera ditandai dan dilaporkan untuk penggantian.</div>
+                  <div class="step-danger">🚫 APD yang rusak TIDAK BOLEH digunakan kembali sebelum diperbaiki/diganti.</div>
+                </div>
+              </div>
+              <div class="sop-step">
+                <div class="step-num">2</div>
+                <div class="step-content">
+                  <div class="step-title">Cuci APD tekstil</div>
+                  <div class="step-desc">Baju tahan api (turnout gear), sarung tangan, dan balaklava dicuci dengan deterjen khusus. Cuci secara terpisah dari pakaian lain. Gunakan air dingin atau hangat (maks. 40°C).</div>
+                </div>
+              </div>
+              <div class="sop-step">
+                <div class="step-num">3</div>
+                <div class="step-content">
+                  <div class="step-title">Bersihkan helm dan SCBA</div>
+                  <div class="step-desc">Helm: bersihkan dengan kain lembab dan disinfektan ringan. SCBA: bersihkan masker dengan disinfektan sesuai spesifikasi produsen. Periksa tekanan tabung oksigen.</div>
+                </div>
+              </div>
+              <div class="sop-step">
+                <div class="step-num">4</div>
+                <div class="step-content">
+                  <div class="step-title">Keringkan dan simpan</div>
+                  <div class="step-desc">Keringkan semua APD di tempat yang berventilasi baik, jauhkan dari sinar matahari langsung. Simpan dalam kondisi bersih dan kering di lemari APD. Pastikan mudah dijangkau untuk operasi berikutnya.</div>
+                  <div class="step-safe">✅ APD yang bersih dan terawat dapat memperpanjang umur pemakaian dan meningkatkan efektivitas perlindungan.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SOP 4 -->
+        <div class="sop-content-area" id="sop4">
+          <div class="sop-card">
+            <div class="sop-card-header">
+              <div class="sop-card-num">04</div>
+              <div>
+                <div class="sop-card-title">SOP Penanganan Kasus Risiko Tinggi</div>
+                <div class="sop-card-sub">Protokol respon cepat untuk skor merah (67–100)</div>
+              </div>
+            </div>
+            <div class="sop-steps">
+              <div class="sop-step">
+                <div class="step-num">1</div>
+                <div class="step-content">
+                  <div class="step-title">Deteksi otomatis oleh sistem</div>
+                  <div class="step-desc">Sistem Google Sheets secara otomatis akan menandai laporan dengan skor 67+ sebagai RISIKO TINGGI dengan warna merah. Notifikasi otomatis dikirim ke supervisor melalui email/WhatsApp.</div>
+                  <div class="step-danger">🚨 Risiko tinggi wajib ditangani dalam 24 jam pertama.</div>
+                </div>
+              </div>
+              <div class="sop-step">
+                <div class="step-num">2</div>
+                <div class="step-content">
+                  <div class="step-title">Konfirmasi kondisi petugas oleh supervisor</div>
+                  <div class="step-desc">Supervisor langsung menghubungi petugas bersangkutan untuk konfirmasi kondisi. Jika ada gejala akut (sesak napas berat, pusing parah, luka bakar), hubungi layanan medis darurat.</div>
+                </div>
+              </div>
+              <div class="sop-step">
+                <div class="step-num">3</div>
+                <div class="step-content">
+                  <div class="step-title">Rujuk ke fasilitas kesehatan</div>
+                  <div class="step-desc">Petugas dengan skor risiko tinggi wajib dirujuk ke Puskesmas atau RSUD Lingga untuk pemeriksaan fisik komprehensif meliputi spirometri, pemeriksaan darah rutin, dan evaluasi psikologis.</div>
+                </div>
+              </div>
+              <div class="sop-step">
+                <div class="step-num">4</div>
+                <div class="step-content">
+                  <div class="step-title">Pembebasan tugas sementara</div>
+                  <div class="step-desc">Petugas dengan kasus risiko tinggi dibebaskan dari tugas operasional pemadaman selama masa pemulihan berdasarkan rekomendasi dokter. Dapat ditugaskan pada tugas administratif sementara.</div>
+                </div>
+              </div>
+              <div class="sop-step">
+                <div class="step-num">5</div>
+                <div class="step-content">
+                  <div class="step-title">Dokumentasi dan tindak lanjut</div>
+                  <div class="step-desc">Buat laporan insiden K3 resmi. Catat dalam rekam medis petugas. Lakukan evaluasi penyebab untuk perbaikan sistem perlindungan. Laporan diteruskan ke Kepala Satpol PP dan Damkar.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════ -->
+<!-- TAB: VIDEO GUIDE -->
+<!-- ════════════════════════════════ -->
+<div class="tab-pane main" id="pane-video">
+  <div class="video-wrapper">
+    <div class="section">
+      <div class="section-title">🎬 PANDUAN VIDEO TUTORIAL</div>
+      <p class="section-desc">Klik video untuk melihat ringkasan materi. Hubungkan ke YouTube/Google Drive untuk video asli.</p>
+
+      <div class="video-grid">
+        <div class="video-card" onclick="openVideo('v1')">
+          <div class="video-thumb" style="background:linear-gradient(135deg,#1a0500,#3a0a00);">🔥</div>
+          <div class="video-info">
+            <span class="video-tag fire">WAJIB TONTON</span>
+            <div class="video-title">Bahaya Paparan Zat Toksik pada Petugas Pemadam Kebakaran</div>
+            <div class="video-duration">⏱️ 5–7 menit &nbsp;•&nbsp; K3 Dasar</div>
+          </div>
+        </div>
+        <div class="video-card" onclick="openVideo('v2')">
+          <div class="video-thumb" style="background:linear-gradient(135deg,#001a05,#003a0a);">🚿</div>
+          <div class="video-info">
+            <span class="video-tag decon">DEKONTAMINASI</span>
+            <div class="video-title">Panduan Dekontaminasi Diri yang Benar Setelah Pemadaman</div>
+            <div class="video-duration">⏱️ 3–5 menit &nbsp;•&nbsp; Prosedur</div>
+          </div>
+        </div>
+        <div class="video-card" onclick="openVideo('v3')">
+          <div class="video-thumb" style="background:linear-gradient(135deg,#000a1a,#00153a);">📋</div>
+          <div class="video-info">
+            <span class="video-tag health">MONITORING</span>
+            <div class="video-title">Cara Mengisi Form Monitoring SI-API SEHAT dengan Tepat</div>
+            <div class="video-duration">⏱️ 4–6 menit &nbsp;•&nbsp; Tutorial Aplikasi</div>
+          </div>
+        </div>
+        <div class="video-card" onclick="openVideo('v4')">
+          <div class="video-thumb" style="background:linear-gradient(135deg,#1a001a,#3a003a);">🧠</div>
+          <div class="video-info">
+            <span class="video-tag mental">MENTAL</span>
+            <div class="video-title">Mengenali Gejala Stres & Trauma Pasca Kejadian Darurat</div>
+            <div class="video-duration">⏱️ 6–8 menit &nbsp;•&nbsp; Kesehatan Mental</div>
+          </div>
+        </div>
+        <div class="video-card" onclick="openVideo('v5')">
+          <div class="video-thumb" style="background:linear-gradient(135deg,#1a0a00,#3a1a00);">🦺</div>
+          <div class="video-info">
+            <span class="video-tag decon">APD</span>
+            <div class="video-title">Cara Membersihkan dan Merawat APD Setelah Operasi</div>
+            <div class="video-duration">⏱️ 4–5 menit &nbsp;•&nbsp; Peralatan</div>
+          </div>
+        </div>
+        <div class="video-card" onclick="openVideo('v6')">
+          <div class="video-thumb" style="background:linear-gradient(135deg,#0a1a00,#1a3a00);">💪</div>
+          <div class="video-info">
+            <span class="video-tag health">WELLNESS</span>
+            <div class="video-title">Teknik Pemulihan Cepat & Self-Care untuk Petugas</div>
+            <div class="video-duration">⏱️ 5–7 menit &nbsp;•&nbsp; Recovery</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="alert-box info" style="margin-top:24px;">
+        <span>🎥</span>
+        <div><strong>Integrasi Video:</strong> Video tutorial final akan diunggah ke Google Drive atau YouTube Channel resmi Satpol PP dan Damkar Kabupaten Lingga. Akses dapat dilakukan melalui QR Code khusus yang ditempel di pos dan kendaraan damkar.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════ -->
+<!-- TAB: QR CODE -->
+<!-- ════════════════════════════════ -->
+<div class="tab-pane main" id="pane-qr">
+  <div class="qr-section">
+    <div class="section-title" style="color:white;margin-bottom:8px;">📱 QR CODE AKSES CEPAT</div>
+    <p style="color:#888;font-size:13px;margin-bottom:28px;">Tempel QR Code ini di kendaraan damkar, pos, ruang briefing, dan loker petugas untuk akses cepat sistem SI-API SEHAT</p>
+
+    <div class="qr-grid">
+
+      <!-- CARD 1: FORM MONITORING -->
+      <div class="qr-card">
+        <div class="qr-visual">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <rect x="5" y="5" width="30" height="30" fill="none" stroke="#1a1a1a" stroke-width="3"/>
+            <rect x="10" y="10" width="20" height="20" fill="#1a1a1a"/>
+            <rect x="65" y="5" width="30" height="30" fill="none" stroke="#1a1a1a" stroke-width="3"/>
+            <rect x="70" y="10" width="20" height="20" fill="#1a1a1a"/>
+            <rect x="5" y="65" width="30" height="30" fill="none" stroke="#1a1a1a" stroke-width="3"/>
+            <rect x="10" y="70" width="20" height="20" fill="#1a1a1a"/>
+            <rect x="40" y="5" width="5" height="5" fill="#1a1a1a"/><rect x="50" y="5" width="5" height="5" fill="#1a1a1a"/>
+            <rect x="40" y="15" width="5" height="5" fill="#1a1a1a"/><rect x="55" y="15" width="5" height="5" fill="#1a1a1a"/>
+            <rect x="5" y="40" width="5" height="5" fill="#1a1a1a"/><rect x="20" y="40" width="5" height="5" fill="#1a1a1a"/>
+            <rect x="40" y="40" width="5" height="5" fill="#1a1a1a"/><rect x="55" y="40" width="5" height="5" fill="#1a1a1a"/>
+            <rect x="70" y="40" width="5" height="5" fill="#1a1a1a"/><rect x="85" y="40" width="5" height="5" fill="#1a1a1a"/>
+            <rect x="45" y="55" width="5" height="5" fill="#1a1a1a"/><rect x="60" y="60" width="5" height="5" fill="#1a1a1a"/>
+            <rect x="75" y="65" width="5" height="5" fill="#1a1a1a"/><rect x="45" y="75" width="5" height="5" fill="#1a1a1a"/>
+            <text x="50" y="54" text-anchor="middle" font-size="14" font-family="sans-serif">📋</text>
+          </svg>
+        </div>
+        <div class="qr-card-body">
+          <div class="qr-label">FORM MONITORING</div>
+          <div class="qr-desc">Paste link Google Form Anda agar QR Code dan tombol salin berfungsi dengan URL asli.</div>
+          <div class="qr-input-wrap">
+            <input id="qr-form-url" class="qr-input" type="url" placeholder="https://forms.gle/...">
+            <button class="qr-save-btn" onclick="qrSaveFormURL()"
+              style="background:rgba(255,69,0,.12);border-color:rgba(255,69,0,.3);color:var(--fire2);">
+              💾 Simpan Link Form
+            </button>
+          </div>
+          <button class="qr-btn" onclick="qrCopyFormURL()">🔗 Salin Link Form</button>
+        </div>
+      </div>
+
+      <!-- CARD 2: DASHBOARD / WEB APP -->
+      <div class="qr-card">
+        <div class="qr-visual">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <rect x="5" y="5" width="30" height="30" fill="none" stroke="#1a1a1a" stroke-width="3"/>
+            <rect x="10" y="10" width="20" height="20" fill="#1a1a1a"/>
+            <rect x="65" y="5" width="30" height="30" fill="none" stroke="#1a1a1a" stroke-width="3"/>
+            <rect x="70" y="10" width="20" height="20" fill="#1a1a1a"/>
+            <rect x="5" y="65" width="30" height="30" fill="none" stroke="#1a1a1a" stroke-width="3"/>
+            <rect x="10" y="70" width="20" height="20" fill="#1a1a1a"/>
+            <rect x="45" y="5" width="5" height="5" fill="#1a1a1a"/><rect x="55" y="10" width="5" height="5" fill="#1a1a1a"/>
+            <rect x="45" y="20" width="5" height="5" fill="#1a1a1a"/><rect x="10" y="45" width="5" height="5" fill="#1a1a1a"/>
+            <rect x="25" y="45" width="5" height="5" fill="#1a1a1a"/><rect x="50" y="45" width="5" height="5" fill="#1a1a1a"/>
+            <rect x="65" y="45" width="5" height="5" fill="#1a1a1a"/><rect x="85" y="45" width="5" height="5" fill="#1a1a1a"/>
+            <rect x="40" y="55" width="5" height="5" fill="#1a1a1a"/><rect x="60" y="55" width="5" height="5" fill="#1a1a1a"/>
+            <rect x="75" y="65" width="5" height="5" fill="#1a1a1a"/><rect x="45" y="75" width="5" height="5" fill="#1a1a1a"/>
+            <text x="50" y="54" text-anchor="middle" font-size="14" font-family="sans-serif">📊</text>
+          </svg>
+        </div>
+        <div class="qr-card-body">
+          <div class="qr-label">URL WEB APP</div>
+          <div class="qr-desc">Paste URL Web App Google Apps Script untuk menghubungkan dashboard dengan data Sheets.</div>
+          <div class="qr-input-wrap">
+            <input id="qr-webapp-url" class="qr-input" type="url" placeholder="https://script.google.com/macros/s/.../exec">
+            <button class="qr-save-btn" onclick="qrSaveWebAppURL()"
+              style="background:rgba(59,130,246,.12);border-color:rgba(59,130,246,.3);color:#93C5FD;">
+              💾 Simpan URL Web App
+            </button>
+          </div>
+          <button class="qr-btn" onclick="qrCopyWebAppURL()">🔗 Salin URL Web App</button>
+        </div>
+      </div>
+
+      <!-- CARD 3: VIDEO TUTORIAL -->
+      <div class="qr-card">
+        <div class="qr-visual">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <rect x="5" y="5" width="30" height="30" fill="none" stroke="#1a1a1a" stroke-width="3"/>
+            <rect x="10" y="10" width="20" height="20" fill="#1a1a1a"/>
+            <rect x="65" y="5" width="30" height="30" fill="none" stroke="#1a1a1a" stroke-width="3"/>
+            <rect x="70" y="10" width="20" height="20" fill="#1a1a1a"/>
+            <rect x="5" y="65" width="30" height="30" fill="none" stroke="#1a1a1a" stroke-width="3"/>
+            <rect x="10" y="70" width="20" height="20" fill="#1a1a1a"/>
+            <rect x="40" y="8" width="5" height="5" fill="#1a1a1a"/><rect x="55" y="12" width="5" height="5" fill="#1a1a1a"/>
+            <rect x="40" y="22" width="5" height="5" fill="#1a1a1a"/><rect x="8" y="40" width="5" height="5" fill="#1a1a1a"/>
+            <rect x="22" y="40" width="5" height="5" fill="#1a1a1a"/><rect x="40" y="40" width="5" height="5" fill="#1a1a1a"/>
+            <rect x="60" y="38" width="5" height="5" fill="#1a1a1a"/><rect x="75" y="42" width="5" height="5" fill="#1a1a1a"/>
+            <rect x="45" y="55" width="5" height="5" fill="#1a1a1a"/><rect x="60" y="62" width="5" height="5" fill="#1a1a1a"/>
+            <rect x="45" y="72" width="5" height="5" fill="#1a1a1a"/><rect x="60" y="80" width="5" height="5" fill="#1a1a1a"/>
+            <text x="50" y="54" text-anchor="middle" font-size="14" font-family="sans-serif">🎬</text>
+          </svg>
+        </div>
+        <div class="qr-card-body">
+          <div class="qr-label">VIDEO TUTORIAL</div>
+          <div class="qr-desc">Akses langsung ke playlist video tutorial dekontaminasi, pengisian form, dan panduan K3 petugas pemadam.</div>
+          <div style="margin-top:auto;padding-top:12px;">
+            <button class="qr-btn" onclick="switchTab('video')" style="width:100%;">🎬 Lihat Video Guide</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="card" style="max-width:600px;margin:28px auto 0;">
+      <div class="card-header">
+        <div class="card-header-icon">⚙️</div>
+        <div><div class="card-header-title">Panduan Implementasi Google Apps Script</div><div class="card-header-sub">Hubungkan form ke Google Sheets secara otomatis</div></div>
+      </div>
+      <div class="card-body">
+        <div style="font-size:13px;color:#ccc;line-height:1.8;">
+          <strong style="color:white;">Langkah implementasi:</strong><br>
+          <span style="font-family:'JetBrains Mono';font-size:12px;background:rgba(255,255,255,0.05);padding:12px;display:block;border-radius:6px;margin:10px 0;color:#bbb;">
+            1. Buka Google Form → Tambahkan pertanyaan sesuai struktur di atas<br>
+            2. Hubungkan ke Google Sheets (Responses → Create Spreadsheet)<br>
+            3. Buka Sheets → Extensions → Apps Script<br>
+            4. Tambahkan fungsi kalkulasi skor risiko otomatis<br>
+            5. Set trigger "On Form Submit"<br>
+            6. Aktifkan notifikasi email/WA untuk skor risiko tinggi<br>
+            7. Generate QR Code dari link form (qr-code-generator.com)
+          </span>
+          <strong style="color:var(--fire-light);">Rumus Skor Risiko (Google Sheets):</strong>
+          <div style="font-family:'JetBrains Mono';font-size:11px;background:rgba(255,255,255,0.05);padding:10px;border-radius:6px;margin-top:6px;color:#4ADE80;">
+            =IF(Skor&gt;66,"🔴 RISIKO TINGGI",IF(Skor&gt;33,"🟡 RISIKO SEDANG","🟢 RISIKO RENDAH"))
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- VIDEO MODAL -->
+<div class="modal-overlay" id="video-modal" onclick="closeModal(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-vid-title">Video Tutorial</span>
+      <button class="modal-close" onclick="closeModal(null)">✕</button>
+    </div>
+    <div class="modal-video-area" id="modal-vid-area"></div>
+    <div class="modal-body">
+      <div class="modal-steps" id="modal-vid-steps"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══ TAB SWITCHING ═══
+function switchTab(id) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('pane-' + id).classList.add('active');
+  document.getElementById('tab-' + id).classList.add('active');
+  window.scrollTo(0, 0);
+  if (id === 'dashboard') dbInit();
+}
+
+// ═══════════════════════════════════════════
+// DASHBOARD LIVE DATA — Google Sheets via Apps Script
+// ═══════════════════════════════════════════
+const DB_URL_KEY = 'si_api_sehat_webappurl';
+let dbAllData = [];
+let dbFilter = 'semua';
+let dbSearch = '';
+
+function dbInit() {
+  const url = localStorage.getItem(DB_URL_KEY);
+  if (!url) {
+    document.getElementById('db-setup-banner').style.display = 'block';
+  } else {
+    document.getElementById('db-setup-banner').style.display = 'none';
+    dbLoadData();
+  }
+}
+
+function dbSaveURL() {
+  const url = document.getElementById('db-url-input').value.trim();
+  if (!url || !url.startsWith('https://script.google.com')) {
+    alert('URL tidak valid. Harus dimulai dengan https://script.google.com');
+    return;
+  }
+  localStorage.setItem(DB_URL_KEY, url);
+  document.getElementById('db-setup-banner').style.display = 'none';
+  dbLoadData();
+}
+
+function dbResetURL() {
+  localStorage.removeItem(DB_URL_KEY);
+  dbAllData = [];
+  document.getElementById('db-setup-banner').style.display = 'block';
+  document.getElementById('db-url-input').value = '';
+  document.getElementById('db-live-badge').style.display = 'none';
+  document.getElementById('db-demo-badge').style.display = 'inline-block';
+  document.getElementById('db-last-updated').style.display = 'none';
+  dbResetMetrics();
+}
+
+function dbResetMetrics() {
+  ['db-m-total','db-m-low','db-m-med','db-m-high','db-m-kons'].forEach(id => {
+    document.getElementById(id).textContent = '—';
+  });
+  document.getElementById('db-m-total-sub').textContent = 'Belum terhubung';
+  document.getElementById('db-m-low-sub').textContent = '';
+  document.getElementById('db-tbody').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:#555;">Hubungkan ke Google Sheets untuk melihat data</td></tr>';
+}
+
+async function dbLoadData() {
+  const url = localStorage.getItem(DB_URL_KEY);
+  if (!url) { dbInit(); return; }
+
+  document.getElementById('db-loading').style.display = 'block';
+  document.getElementById('db-error').style.display = 'none';
+  document.getElementById('db-refresh-btn').textContent = '↻ Memuat...';
+
+  try {
+    const apiUrl = url + (url.includes('?') ? '&' : '?') + 'action=data&t=' + Date.now();
+    const res = await fetch(apiUrl);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'Response tidak valid');
+
+    dbAllData = json.rows || [];
+    const s = json.summary || dbCalcSummary(dbAllData);
+    dbRenderMetrics(s);
+    dbRenderDonut(s);
+    dbRenderBarChart();
+    dbApplyFilter();
+
+    document.getElementById('db-live-badge').style.display = 'inline-block';
+    document.getElementById('db-demo-badge').style.display = 'none';
+    const lu = document.getElementById('db-last-updated');
+    lu.style.display = 'block';
+    lu.textContent = 'Terakhir diperbarui: ' + (json.lastUpdated || new Date().toLocaleString('id-ID'));
+
+  } catch(err) {
+    let msg = err.message;
+    if (msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
+      msg = 'Tidak dapat terhubung ke Apps Script.\nPastikan:\n1. URL Web App sudah benar\n2. Deployment diset "Who has access: Anyone"\n3. Koneksi internet aktif';
+    }
+    document.getElementById('db-error-msg').textContent = msg;
+    document.getElementById('db-error').style.display = 'block';
+  }
+
+  document.getElementById('db-loading').style.display = 'none';
+  document.getElementById('db-refresh-btn').textContent = '↻ Refresh';
+}
+
+function dbCalcSummary(rows) {
+  return {
+    total:     rows.length,
+    rendah:    rows.filter(r => String(r.level||'').includes('RENDAH')).length,
+    sedang:    rows.filter(r => String(r.level||'').includes('SEDANG')).length,
+    tinggi:    rows.filter(r => String(r.level||'').includes('TINGGI')).length,
+    konseling: rows.filter(r => String(r.konselor||'').toLowerCase().startsWith('ya')).length,
+  };
+}
+
+function dbRenderMetrics(s) {
+  document.getElementById('db-m-total').textContent = s.total;
+  document.getElementById('db-m-low').textContent   = s.rendah;
+  document.getElementById('db-m-med').textContent   = s.sedang;
+  document.getElementById('db-m-high').textContent  = s.tinggi;
+  document.getElementById('db-m-kons').textContent  = s.konseling;
+  const pct = s.total ? Math.round(s.rendah / s.total * 100) : 0;
+  document.getElementById('db-m-total-sub').textContent = s.total + ' total responden';
+  document.getElementById('db-m-low-sub').textContent = pct + '% dari total laporan';
+  document.getElementById('db-dl-low').textContent  = s.rendah;
+  document.getElementById('db-dl-med').textContent  = s.sedang;
+  document.getElementById('db-dl-high').textContent = s.tinggi;
+  document.getElementById('db-dl-kons').textContent = s.konseling;
+  document.getElementById('db-donut-num').textContent = s.total;
+}
+
+function dbRenderDonut(s) {
+  if (!s.total) return;
+  const C = 100;
+  const lPct = s.rendah / s.total * C;
+  const mPct = s.sedang / s.total * C;
+  const hPct = s.tinggi / s.total * C;
+  document.getElementById('db-arc-low').setAttribute('stroke-dasharray',  lPct + ' ' + (C - lPct));
+  document.getElementById('db-arc-med').setAttribute('stroke-dasharray',  mPct + ' ' + (C - mPct));
+  document.getElementById('db-arc-high').setAttribute('stroke-dasharray', hPct + ' ' + (C - hPct));
+  document.getElementById('db-arc-low').setAttribute('stroke-dashoffset',  25);
+  document.getElementById('db-arc-med').setAttribute('stroke-dashoffset',  -(lPct - 25));
+  document.getElementById('db-arc-high').setAttribute('stroke-dashoffset', -(lPct + mPct - 25));
+}
+
+function dbRenderBarChart() {
+  const monthly = {};
+  dbAllData.forEach(r => {
+    const ts = r.timestamp || '';
+    const key = ts.length >= 7 ? ts.slice(-7) : (ts || 'Lainnya');
+    monthly[key] = (monthly[key] || 0) + 1;
+  });
+  const months = Object.entries(monthly).slice(-6);
+  const el = document.getElementById('db-bar-chart');
+  if (!months.length) { el.innerHTML = '<div style="width:100%;text-align:center;color:#555;font-size:12px;padding:20px 0;">Belum ada data</div>'; return; }
+  const maxVal = Math.max(...months.map(m => m[1]), 1);
+  const colors = ['var(--safe)','var(--safe)','var(--warn)','var(--fire)','var(--danger)','var(--info)'];
+  el.innerHTML = months.map(([label, val], i) => `
+    <div class="bar-item">
+      <div class="bar-val">${val}</div>
+      <div class="bar-fill" style="height:${Math.max(6, val/maxVal*100)}%;background:${colors[i % colors.length]};"></div>
+      <div class="bar-label">${label}</div>
+    </div>`).join('');
+}
+
+function dbPillHtml(level) {
+  const lv = String(level || '').toUpperCase();
+  if (lv.includes('TINGGI')) return '<span class="status-pill high">TINGGI</span>';
+  if (lv.includes('SEDANG')) return '<span class="status-pill medium">SEDANG</span>';
+  return '<span class="status-pill low">RENDAH</span>';
+}
+
+function dbSetFilter(f, btn) {
+  dbFilter = f;
+  document.querySelectorAll('.db-fb').forEach(b => {
+    b.style.background = 'rgba(255,255,255,.04)';
+    b.style.borderColor = 'rgba(255,255,255,.08)';
+    b.style.color = '#888';
+  });
+  btn.style.background = 'rgba(255,69,0,.1)';
+  btn.style.borderColor = 'rgba(255,69,0,.3)';
+  btn.style.color = 'var(--fire2)';
+  dbApplyFilter();
+}
+
+function dbFilterTable(q) { dbSearch = q.toLowerCase(); dbApplyFilter(); }
+
+function dbApplyFilter() {
+  let rows = dbAllData;
+  if (dbFilter !== 'semua') {
+    rows = rows.filter(r => {
+      const lv = String(r.level || '').toUpperCase();
+      if (dbFilter === 'rendah') return lv.includes('RENDAH');
+      if (dbFilter === 'sedang') return lv.includes('SEDANG');
+      if (dbFilter === 'tinggi') return lv.includes('TINGGI');
+      return true;
+    });
+  }
+  if (dbSearch) rows = rows.filter(r => String(r.nama || '').toLowerCase().includes(dbSearch));
+  dbRenderTable(rows);
+}
+
+function dbRenderTable(rows) {
+  const tbody = document.getElementById('db-tbody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:#555;">Tidak ada data yang sesuai</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r => {
+    const s = Number(r.skor) || 0;
+    const sColor = s >= 67 ? 'var(--danger)' : s >= 34 ? 'var(--warn)' : 'var(--safe)';
+    return `<tr>
+      <td style="font-family:'JetBrains Mono';font-size:11px;color:#888;">${r.timestamp || '-'}</td>
+      <td style="color:var(--white);font-weight:500;">${r.nama || '-'}</td>
+      <td style="font-size:11px;">${r.jabatan || '-'}</td>
+      <td>${r.jenis || '-'}</td>
+      <td style="font-family:'JetBrains Mono';font-weight:600;color:${sColor};">${s}/100</td>
+      <td>${dbPillHtml(r.level)}</td>
+      <td style="font-size:11px;color:${sColor};">${r.tindak || '-'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function dbExport() {
+  if (!dbAllData.length) { alert('Tidak ada data untuk diekspor.'); return; }
+  const header = 'Tanggal,Nama,NIP,Jabatan,Lokasi,Jenis,Lama,Skor,Status,Tindak Lanjut';
+  const rows = dbAllData.map(r =>
+    [r.timestamp,r.nama,r.nip,r.jabatan,r.lokasi,r.jenis,r.lama,r.skor,r.level,r.tindak]
+    .map(v => '"' + String(v || '').replace(/"/g, '""') + '"').join(',')
+  );
+  const csv = '\uFEFF' + header + '\n' + rows.join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'SI-API-SEHAT-' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+// ═══ SOP NAV ═══
+function showSOP(id, el) {
+  document.querySelectorAll('.sop-content-area').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.sop-nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+}
+
+// ═══ SCALE BUTTONS ═══
+const scaleValues = {};
+function selectScale(groupId, val, btn) {
+  const group = document.getElementById(groupId);
+  group.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  scaleValues[groupId] = val;
+  updateRisk();
+}
+
+// ═══ RISK CALCULATOR ═══
+function updateRisk() {
+  let score = 0;
+  // Jenis kebakaran
+  const jenis = document.querySelector('input[name="jenis"]:checked');
+  if (jenis) {
+    if (jenis.value === 'b3') score += 20;
+    else if (jenis.value === 'industri') score += 15;
+    else if (jenis.value === 'lahan') score += 12;
+    else if (jenis.value === 'bangunan') score += 10;
+    else score += 5;
+  }
+  // Lama penugasan
+  const lama = document.querySelector('input[name="lama"]:checked');
+  if (lama) score += parseInt(lama.value) * 4;
+  // APD tidak lengkap
+  if (document.getElementById('apd6').checked) score += 15;
+  else {
+    let apdCount = ['apd1','apd2','apd3','apd4','apd5'].filter(id => document.getElementById(id).checked).length;
+    score -= apdCount * 2;
+  }
+  // Gejala fisik
+  const gejalIds = ['g1','g2','g3','g4','g5','g6'];
+  gejalIds.forEach(id => { if (document.getElementById(id).checked) score += 5; });
+  // Lelah & mental scale
+  if (scaleValues['skala-lelah']) score += scaleValues['skala-lelah'] * 2;
+  if (scaleValues['skala-mental']) score += scaleValues['skala-mental'] * 2;
+  // Mental symptoms
+  ['m1','m2','m3','m4','m5'].forEach(id => { if (document.getElementById(id).checked) score += 4; });
+
+  score = Math.max(0, Math.min(100, score));
+  document.getElementById('risk-score-num').textContent = score;
+  const bar = document.getElementById('risk-bar');
+  const badge = document.getElementById('risk-badge');
+  const msg = document.getElementById('risk-msg');
+  bar.style.width = score + '%';
+  if (score >= 67) {
+    bar.style.background = 'var(--danger)';
+    badge.className = 'risk-badge high';
+    badge.textContent = 'RISIKO TINGGI (HIGH)';
+    msg.textContent = '🚨 Segera ke fasilitas kesehatan. Laporkan ke atasan hari ini.';
+  } else if (score >= 34) {
+    bar.style.background = 'var(--warn)';
+    badge.className = 'risk-badge medium';
+    badge.textContent = 'RISIKO SEDANG (MEDIUM)';
+    msg.textContent = '⚠️ Perlu pemantauan 3 hari. Laporkan ke supervisor langsung.';
+  } else {
+    bar.style.background = 'var(--safe)';
+    badge.className = 'risk-badge low';
+    badge.textContent = 'RISIKO RENDAH (LOW)';
+    msg.textContent = '✅ Lakukan dekontaminasi standar dan istirahat cukup.';
+  }
+}
+
+// ═══ FORM SUBMIT ═══
+function submitForm() {
+  const nama = document.getElementById('f-nama').value.trim();
+  if (!nama) { alert('⚠️ Mohon isi nama lengkap Anda terlebih dahulu.'); return; }
+  const score = parseInt(document.getElementById('risk-score-num').textContent) || 0;
+  const formScreen = document.getElementById('form-screen');
+  const successScreen = document.getElementById('success-screen');
+  let level, color, icon, steps;
+  if (score >= 67) {
+    level = '🔴 RISIKO TINGGI'; color = '#EF4444';
+    icon = '🚨';
+    steps = ['Segera hubungi supervisor / kepala regu Anda', 'Pergi ke fasilitas kesehatan (Puskesmas/RSUD Lingga) hari ini', 'Mandi dekontaminasi segera', 'Beristirahat dan jangan lakukan aktivitas fisik berat', 'Jika diminta konseling, koordinasi dengan petugas K3'];
+  } else if (score >= 34) {
+    level = '🟡 RISIKO SEDANG'; color = '#F59E0B';
+    icon = '⚠️';
+    steps = ['Laporkan kondisi ke supervisor dalam 24 jam', 'Lakukan dekontaminasi lengkap sesuai SOP', 'Pantau kondisi selama 3 hari ke depan', 'Istirahat cukup dan minum banyak air', 'Jika gejala memburuk, segera ke fasilitas kesehatan'];
+  } else {
+    level = '🟢 RISIKO RENDAH'; color = '#22C55E';
+    icon = '✅';
+    steps = ['Lakukan mandi dan ganti pakaian', 'Bersihkan APD sesuai SOP', 'Minum air dan istirahat cukup', 'Pantau kondisi dalam 24 jam ke depan', 'Terima kasih telah mengisi form monitoring'];
+  }
+  document.getElementById('result-risk-display').innerHTML = `
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:6px;">SKOR RISIKO ANDA</div>
+    <div style="font-size:48px;font-family:'Bebas Neue';color:${color};line-height:1;">${score}</div>
+    <div style="font-size:14px;font-weight:700;color:${color};margin-top:6px;">${level}</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Laporan tercatat untuk: <strong>${nama}</strong></div>
+  `;
+  document.getElementById('decon-steps').innerHTML = `
+    <h4 style="font-size:14px;font-weight:700;margin-bottom:12px;color:var(--text-primary);">${icon} Tindak Lanjut yang Harus Dilakukan:</h4>
+    ${steps.map((s,i) => `<div class="decon-step"><div class="decon-num">${i+1}</div><div class="decon-text">${s}</div></div>`).join('')}
+  `;
+  formScreen.style.display = 'none';
+  successScreen.classList.add('show');
+  window.scrollTo(0, 0);
+}
+
+function resetForm() {
+  document.getElementById('form-screen').style.display = 'block';
+  document.getElementById('success-screen').classList.remove('show');
+  document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+  document.querySelectorAll('input[type="checkbox"]').forEach(c => c.checked = false);
+  document.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll('input[type="text"], input[type="datetime-local"], textarea').forEach(i => i.value = '');
+  document.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
+  Object.keys(scaleValues).forEach(k => delete scaleValues[k]);
+  updateRisk();
+  window.scrollTo(0, 0);
+}
+
+// ═══ QR TAB — URL MANAGEMENT ═══
+const QR_FORM_KEY   = 'si_api_form_url';
+const QR_WEBAPP_KEY = 'si_api_sehat_webappurl';
+
+function qrSaveFormURL() {
+  const url = document.getElementById('qr-form-url').value.trim();
+  if (!url) { alert('Mohon isi link Google Form terlebih dahulu.'); return; }
+  localStorage.setItem(QR_FORM_KEY, url);
+  qrShowToast('✅ Link Google Form berhasil disimpan!');
+}
+function qrCopyFormURL() {
+  const url = localStorage.getItem(QR_FORM_KEY) || document.getElementById('qr-form-url').value.trim();
+  if (!url) { alert('Belum ada link form. Isi dan simpan dulu.'); return; }
+  navigator.clipboard.writeText(url).then(() => qrShowToast('✅ Link Form disalin!'));
+}
+function qrSaveWebAppURL() {
+  const url = document.getElementById('qr-webapp-url').value.trim();
+  if (!url || !url.startsWith('https://script.google.com')) { alert('URL tidak valid.'); return; }
+  localStorage.setItem(QR_WEBAPP_KEY, url);
+  qrShowToast('✅ URL Web App berhasil disimpan!');
+}
+function qrCopyWebAppURL() {
+  const url = localStorage.getItem(QR_WEBAPP_KEY) || document.getElementById('qr-webapp-url').value.trim();
+  if (!url) { alert('Belum ada URL Web App. Isi dan simpan dulu.'); return; }
+  navigator.clipboard.writeText(url).then(() => qrShowToast('✅ URL Web App disalin!'));
+}
+function qrShowToast(msg) {
+  let t = document.getElementById('qr-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'qr-toast';
+    t.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#1a2a1a;border:1px solid rgba(34,197,94,.4);color:#4ADE80;padding:10px 18px;border-radius:8px;font-size:12px;font-weight:500;z-index:999;transition:all .3s;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg; t.style.opacity = '1';
+  setTimeout(() => { t.style.opacity = '0'; }, 2500);
+}
+
+// ═══ LOAD SAVED URLS INTO QR INPUTS ═══
+function qrLoadSavedURLs() {
+  const fUrl = localStorage.getItem(QR_FORM_KEY);
+  const wUrl = localStorage.getItem(QR_WEBAPP_KEY);
+  if (fUrl && document.getElementById('qr-form-url'))    document.getElementById('qr-form-url').value = fUrl;
+  if (wUrl && document.getElementById('qr-webapp-url'))  document.getElementById('qr-webapp-url').value = wUrl;
+  // Update form tab banner
+  formUpdateBanner();
+}
+
+// ═══ FORM TAB — LIVE LINK ═══
+function formUpdateBanner() {
+  const fUrl = localStorage.getItem(QR_FORM_KEY);
+  const el = document.getElementById('form-url-display');
+  if (el) el.value = fUrl || '';
+}
+function formOpenGForm() {
+  const url = localStorage.getItem(QR_FORM_KEY);
+  if (!url) { alert('Belum ada link Google Form.\nIsi dan simpan link di tab 📱 QR Code terlebih dahulu.'); return; }
+  window.open(url, '_blank');
+}
+function formCopyURL() {
+  const url = localStorage.getItem(QR_FORM_KEY);
+  if (!url) { alert('Belum ada link Google Form.\nIsi dan simpan link di tab 📱 QR Code terlebih dahulu.'); return; }
+  navigator.clipboard.writeText(url).then(() => qrShowToast('✅ Link Form disalin!'));
+}
+
+// ═══ HOME TAB LIVE DATA ═══
+function homeUpdateLive(data, summary) {
+  // Hero stats
+  document.getElementById('home-stat-total').textContent  = summary.total || '0';
+  document.getElementById('home-stat-tinggi').textContent = summary.tinggi || '0';
+  document.getElementById('home-stat-aman').textContent   = (summary.rendah || 0) + (summary.sedang || 0);
+
+  // Show live stats row
+  document.getElementById('home-live-stats').style.display = 'block';
+  document.getElementById('home-koneksi').textContent  = '● Terhubung ke Sheets';
+  document.getElementById('home-koneksi').style.color  = '#4ADE80';
+
+  // Last responden
+  if (data.length > 0) {
+    const last = data[data.length - 1];
+    document.getElementById('home-last-responden').textContent = last.nama || '-';
+    document.getElementById('home-last-waktu').textContent = last.timestamp || '-';
+  }
+
+  // Top jenis kejadian
+  const jenisCount = {};
+  data.forEach(r => { const j = r.jenis || 'Lainnya'; jenisCount[j] = (jenisCount[j]||0)+1; });
+  const topJenis = Object.entries(jenisCount).sort((a,b)=>b[1]-a[1])[0];
+  if (topJenis) document.getElementById('home-top-jenis').textContent = topJenis[0] + ' (' + topJenis[1] + 'x)';
+
+  // APD compliance
+  const apdOk = data.filter(r => !String(r.apd||'').includes('Tidak menggunakan')).length;
+  const apdPct = data.length ? Math.round(apdOk / data.length * 100) : 0;
+  document.getElementById('home-apd-pct').textContent = apdPct + '% petugas gunakan APD lengkap';
+  document.getElementById('home-apd-pct').style.color = apdPct >= 70 ? 'var(--safe)' : apdPct >= 50 ? 'var(--warn)' : 'var(--danger)';
+
+  // High risk alert
+  const highRisk = data.filter(r => String(r.level||'').includes('TINGGI'));
+  if (highRisk.length > 0) {
+    document.getElementById('home-alert-tinggi').style.display = 'block';
+    document.getElementById('home-alert-list').innerHTML = highRisk.slice(0,3).map(r =>
+      `<div style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(239,68,68,.15);">
+        <span style="font-size:14px;">🚨</span>
+        <div style="flex:1">
+          <span style="font-size:13px;font-weight:600;color:white;">${r.nama||'-'}</span>
+          <span style="font-size:11px;color:#888;margin-left:8px;">${r.jenis||''} · Skor ${r.skor||0}</span>
+        </div>
+        <span style="font-size:11px;color:var(--danger);font-weight:600;">${r.tindak||''}</span>
+      </div>`
+    ).join('') + (highRisk.length > 3 ? `<div style="font-size:11px;color:#888;padding:6px 0;">+${highRisk.length-3} lainnya — lihat di tab Dashboard</div>` : '');
+  }
+}
+
+// ═══ GLOBAL LIVE DATA MANAGER ═══
+let liveData = [];
+let liveSummary = {};
+let liveLoaded = false;
+
+async function globalLoadData() {
+  const url = localStorage.getItem(QR_WEBAPP_KEY);
+  if (!url) return;
+  try {
+    const apiUrl = url + '?action=data&t=' + Date.now();
+    const res  = await fetch(apiUrl);
+    const json = await res.json();
+    if (!json.ok) return;
+    liveData    = json.rows || [];
+    liveSummary = json.summary || dbCalcSummary(liveData);
+    liveLoaded  = true;
+    // Update all tabs
+    homeUpdateLive(liveData, liveSummary);
+    dbRenderMetrics(liveSummary);
+    dbRenderDonut(liveSummary);
+    dbRenderBarChart();
+    dbApplyFilter();
+    document.getElementById('db-live-badge').style.display  = 'inline-block';
+    document.getElementById('db-demo-badge').style.display  = 'none';
+    const lu = document.getElementById('db-last-updated');
+    lu.style.display  = 'block';
+    lu.textContent    = 'Terakhir diperbarui: ' + (json.lastUpdated || new Date().toLocaleString('id-ID'));
+  } catch(e) { /* silent fail on background refresh */ }
+}
+
+// Override dbLoadData to use global
+function dbLoadData() {
+  const url = localStorage.getItem(QR_WEBAPP_KEY);
+  if (!url) {
+    document.getElementById('db-setup-banner').style.display = 'block';
+    return;
+  }
+  document.getElementById('db-loading').style.display = 'block';
+  document.getElementById('db-error').style.display   = 'none';
+  document.getElementById('db-refresh-btn').textContent = '↻ Memuat...';
+  globalLoadData().finally(() => {
+    document.getElementById('db-loading').style.display = 'none';
+    document.getElementById('db-refresh-btn').textContent = '↻ Refresh';
+  });
+}
+
+// ═══ INIT ON LOAD ═══
+window.addEventListener('load', () => {
+  // Set default datetime for form
+  const now   = new Date();
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0,16);
+  const dtEl  = document.getElementById('f-tanggal');
+  if (dtEl) dtEl.value = local;
+  updateRisk();
+  // Load saved URLs into QR inputs
+  qrLoadSavedURLs();
+  // Load live data on startup
+  globalLoadData();
+  // Auto-refresh every 2 minutes
+  setInterval(globalLoadData, 120000);
+});
+
+// ═══ CHECKLIST ═══
+function toggleCheck(item) {
+  const cb = item.querySelector('input[type="checkbox"]');
+  cb.checked = !cb.checked;
+  item.classList.toggle('checked', cb.checked);
+  // Update all checklists progress
+  document.querySelectorAll('[id^="checklist-"]').forEach(cl => {
+    const sopId = cl.id.replace('checklist-','');
+    const all = cl.querySelectorAll('.check-item').length;
+    const done = cl.querySelectorAll('input:checked').length;
+    const bar = document.getElementById('bar-' + sopId);
+    const prog = document.getElementById('prog-' + sopId);
+    if (bar) bar.style.width = (done/all*100) + '%';
+    if (prog) prog.textContent = done + '/' + all;
+  });
+}
+
+// ═══ VIDEO MODAL ═══
+const videoData = {
+  v1: {
+    title: 'Bahaya Paparan Zat Toksik pada Petugas Pemadam',
+    icon: '🔥',
+    steps: ['Kenali 5 zat toksik utama: CO, HCN, NO2, VOC, partikulat halus PM2.5', 'Pahami jalur masuk racun: inhalasi, kulit, dan ingesti', 'Gejala awal paparan yang harus diwaspadai segera setelah operasi', 'Mengapa kebakaran plastik dan bangunan lebih berbahaya dari karhutla', 'Langkah pencegahan: APD lengkap dan dekontaminasi wajib']
+  },
+  v2: {
+    title: 'Panduan Dekontaminasi Diri yang Benar',
+    icon: '🚿',
+    steps: ['Segera keluar dari area asap setelah nyata api padam', 'Lepas APD dengan urutan yang benar (luar ke dalam)', 'Teknik mandi dekontaminasi: gosok kulit minimal 10 menit', 'Keramas untuk membersihkan partikel dari rambut dan kulit kepala', 'Cuci pakaian terpisah dan jangan bawa ke rumah sebelum dicuci']
+  },
+  v3: {
+    title: 'Cara Mengisi Form Monitoring SI-API SEHAT',
+    icon: '📋',
+    steps: ['Scan QR Code di kendaraan atau pos damkar untuk buka form', 'Isi identitas dan data operasi dengan lengkap dan jujur', 'Pilih gejala fisik yang Anda rasakan saat ini', 'Isi skala kelelahan dan tekanan mental dengan nilai 1-10', 'Baca hasil skor risiko otomatis dan ikuti instruksi tindak lanjut']
+  },
+  v4: {
+    title: 'Mengenali Gejala Stres & Trauma Pasca Darurat',
+    icon: '🧠',
+    steps: ['Kenali 3 fase respons stres: akut, subakut, dan kronis', 'Gejala PTSD: flashback, mimpi buruk, menghindari pengingat kejadian', 'Burnout: kelelahan emosional, sinisme, dan penurunan kinerja', 'Teknik grounding sederhana: 5-4-3-2-1 untuk meredakan panik akut', 'Kapan harus mencari bantuan profesional: tanda-tanda warna merah']
+  },
+  v5: {
+    title: 'Pembersihan & Perawatan APD Pasca Operasi',
+    icon: '🦺',
+    steps: ['Inspeksi visual APD setelah setiap operasi (10 poin cek)', 'Cara mencuci turnout gear dengan deterjen khusus', 'Membersihkan dan mendisinfeksi masker/SCBA dengan benar', 'Menyimpan APD di tempat yang benar agar siap digunakan kembali', 'Kapan APD harus diganti: batas umur pemakaian dan tanda kerusakan']
+  },
+  v6: {
+    title: 'Teknik Pemulihan Cepat & Self-Care Petugas',
+    icon: '💪',
+    steps: ['Hidrasi optimal: berapa banyak air yang harus diminum pasca operasi', 'Nutrisi pemulihan: makanan yang membantu detoksifikasi tubuh', 'Teknik relaksasi otot progresif untuk mengurangi ketegangan fisik', 'Tidur pemulihan: tips tidur berkualitas setelah shift operasi', 'Pentingnya koneksi sosial: ngobrol dengan rekan sebagai terapi alami']
+  }
+};
+
+function openVideo(id) {
+  const data = videoData[id];
+  document.getElementById('modal-vid-title').textContent = data.title;
+  document.getElementById('modal-vid-area').innerHTML = `
+    <div style="font-size:64px;">${data.icon}</div>
+    <div style="font-size:12px;color:#888;text-align:center;padding:0 30px;">Video tutorial ini akan diunggah ke Google Drive / YouTube Channel resmi Satpol PP & Damkar Kab. Lingga</div>
+  `;
+  document.getElementById('modal-vid-steps').innerHTML = `
+    <p style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:10px;">POIN-POIN MATERI VIDEO:</p>
+    ${data.steps.map((s,i) => `<div class="modal-step"><div class="modal-step-num">${i+1}</div><div class="modal-step-text">${s}</div></div>`).join('')}
+  `;
+  document.getElementById('video-modal').classList.add('open');
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('video-modal')) {
+    document.getElementById('video-modal').classList.remove('open');
+  }
+}
+</script>
+</body>
+</html>
